@@ -34,9 +34,9 @@ from bs4 import BeautifulSoup
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
 
-author = 'Jeff'
+author = 'LincolnLandForensics'
 description = "Query web to track people down by username,email,ip..."
-tech = 'jeff'  # change this to your name if you are using Linux
+tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
 version = '2.6.9'
 
 # Regex section
