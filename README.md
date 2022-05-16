@@ -32,4 +32,5 @@ Example:
         identity_hunt.py -U -I input.txt -O Intel_.xlsx             # if you are just doing usernames
         identity_hunt.py -W -I input.txt -O Intel_.xlsx             # websites only
         identity_hunt.py -i -p -U -W -I input.txt -O Intel_.xlsx    # this is the full command if you have mixed inputs.
-        
+
+
