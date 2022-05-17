@@ -37,7 +37,7 @@ from bs4 import BeautifulSoup
 author = 'LincolnLandForensics'
 description = "Query web to track people down by username,email,ip..."
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.6.9'
+version = '2.7.0'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -1468,7 +1468,6 @@ def venmo(): # testuser = kevinrose
             (content, referer, osurl, titleurl, pagestatus) = request(url)
         except:
             pass
-        print(content)  #temp
         if 'Do you want to register' not in content:
             fullname = titleurl
             fullname = fullname.split(" (")[0]
