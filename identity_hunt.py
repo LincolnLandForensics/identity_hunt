@@ -37,7 +37,7 @@ from bs4 import BeautifulSoup
 author = 'LincolnLandForensics'
 description = "Query web to track people down by username,email,ip..."
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.7.0'
+version = '2.7.1'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -1817,7 +1817,7 @@ if __name__ == '__main__':
 instagramtwo()
 create a new identity_hunt with xlsx and requests instead of urllib2
 python sherlock kevinrose # mirror sherlock
-
+https://whatsmyname.app/
 https://validnumber.com/phone-number/3124377966/
 https://ttlc.intuit.com/community/user/viewprofilepage/user-id/_95
 
@@ -1826,6 +1826,7 @@ https://ttlc.intuit.com/community/user/viewprofilepage/user-id/_95
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      notes            >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+
 
 
 """
