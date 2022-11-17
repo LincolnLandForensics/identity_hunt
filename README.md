@@ -1,4 +1,4 @@
-# identity_hunt
+# identity_hunt (identiy_hunt.py or identity_hunt.exe)
 OSINT: track people down by username, email, ip, phone and website.
 
 ## installation:
