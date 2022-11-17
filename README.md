@@ -1,11 +1,11 @@
 # identity_hunt
-Query web to track people down by username, email, ip, websites and phone.
+OSINT: track people down by username, email, ip, phone and website.
 
-# installation:
+## installation:
 
 pip install -r requirements.txt
 
-# directions:
+## directions:
 insert emails, phone numbers, usernames into input.txt
 
 -E, --emailmodules    email modules
@@ -22,19 +22,40 @@ insert emails, phone numbers, usernames into input.txt
 
 -W, --websites        websites modules
 
-Example:
-identity_hunt.py -E -I input.txt -O Intel_.xlsx           # emails
+Usage:
 
-identity_hunt.py -i -I input.txt -O Intel_.xlsx           # ip's only
+help
+'''
+identity_hunt.py -H
+'''
+emails
+'''
+identity_hunt.py -E
+'''
+ip's only
+'''
+identity_hunt.py -i
+'''
+print sample info for your input.txt (ex. kevinrose)
+'''
+identity_hunt.py -s
+'''
+phone numbers only
+'''
+identity_hunt.py -p
+'''
+users only
+'''
+identity_hunt.py -U
+'''
+websites only
+'''
+identity_hunt.py -W
+'''
+you can add mixed input types at once.
+'''
+identity_hunt.py -E -i -p -U
+'''
 
-identity_hunt.py -s                                         # prints sample info for your input.txt (ex. evinrose)
 
-identity_hunt.py -p -I input.txt -O Intel_.xlsx             # phone numbers only
-
-identity_hunt.py -U -I input.txt -O Intel_.xlsx             # if you are just doing usernames
-
-identity_hunt.py -W -I input.txt -O Intel_.xlsx             # websites only
-
-identity_hunt.py -i -p -U -W -I input.txt -O Intel_.xlsx    # this is the full command if you have mixed inputs.
-
-
+![sample output](Images/intel_sample.png)
