@@ -16,17 +16,25 @@
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Imports        >>>>>>>>>>>>>>>>>>>>>>>>>>
 
+try:
+    from bs4 import BeautifulSoup
+    import xlsxwriter
+except:
+    print('install missing modules:    pip install -r requirements_identity_hunt.txt')
+    exit()
+
 import os
 import re
 import sys
 import time
 import random
+import socket
 import requests
 import datetime
 import argparse  # for menu system
-import xlsxwriter
 from subprocess import call
-from bs4 import BeautifulSoup
+from tkinter import * 
+from tkinter import messagebox
 
 # import phonenumbers
 # from phonenumbers import geocoder, carrier
@@ -35,9 +43,9 @@ from bs4 import BeautifulSoup
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 author = 'LincolnLandForensics'
-description = "Query web to track people down by username,email,ip..."
+description = "OSING: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.7.1'
+version = '2.7.6'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -82,11 +90,27 @@ else:
     y = '\033[33m'  # yellow
     g = '\033[32m'  # green
     b = '\033[34m'  # blue
-
-
+    
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Menu           >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def main():
+
+    # check internet status
+    status = internet()
+    if status == False:
+        noInternetMsg()
+        print('\nCONNECT TO THE INTERNET FIRST\n')
+        exit()
+
+    # global section
+    global filename
+    filename = 'input.txt'
+    global Spreadsheet
+    Spreadsheet = 'Intel_.xlsx'
+    # global inputDetails
+    # inputDetails = 'no'
+
+
     global row
     row = 1
 
@@ -108,10 +132,11 @@ def main():
     parser.add_argument('-I', '--input', help='', required=False)
     parser.add_argument('-O', '--output', help='', required=False)
     parser.add_argument('-E','--emailmodules', help='email modules', required=False, action='store_true')
+    parser.add_argument('-H','--howto', help='email modules', required=False, action='store_true')
     parser.add_argument('-i','--ips', help='ip modules', required=False, action='store_true')
     parser.add_argument('-p','--phonestuff', help='phone modules', required=False, action='store_true')
-    parser.add_argument('-s','--samples', help='sample modules', required=False, action='store_true')
-    parser.add_argument('-t','--test', help='sample ip, users & emails', required=False, action='store_true')
+    parser.add_argument('-s','--samples', help='print sample inputs', required=False, action='store_true')
+    parser.add_argument('-t','--test', help='testing individual modules', required=False, action='store_true')
     parser.add_argument('-U','--usersmodules', help='username modules', required=False, action='store_true')
     parser.add_argument('-W','--websites', help='websites modules', required=False, action='store_true')    
     
@@ -122,149 +147,156 @@ def main():
     if args.samples:  
         samples()
         return 0
-        
-    elif not args.input:  # this section might be redundant
+    if args.input:
+        filename = args.input
+    if args.output:
+        Spreadsheet = args.output        
+
+    create_ossint_xlsx()    # create the spreadsheet    
+    master()   # re-print(original input list as 1-master and separate emails, ips, phones & users
+    
+    if args.howto:  # this section might be redundant
         parser.print_help()
         usage()
         return 0
 
-    if args.input and args.output:
-        global filename
-        filename = args.input
-        global Spreadsheet
-        Spreadsheet = args.output
-        create_ossint_xlsx()
-        master()   # re-print(original input list as 1-master and separate emails, ips, phones & users
-        # print(emails) # temp
+    if args.emailmodules:  
+        # BingEmail()    # alpha
+        emailrep() #alpha
+        # facebookemail()    # alpha
+        # flickremail()    # alpha  add scraper Invalid API Key
+        # GoogleScrapeEmail() # todo
+        # lifestreamemail()# alpha
+        # linkedinemail()    # alpha stopped working
+        myspaceemail()    # add info, scrape url
+        # naymzemail()    # beta
+        # nikeplusemail()    # need login
+        # piplemail()# add info    (takes 90 seconds per email)
+        # spokeo()    # needs work    (timeout error)
+        # stumbluponemail()# alpha need login
+        thatsthememail()    # https://thatsthem.com/email/smooth8101@yahoo.com
+        twitteremail()    
+        wordpresssearchemail()  # works
+        # YelpEmail()# alpha
+        
+    if args.ips:  
+        print("checking :", ips)
+        geoiptool() # works but need need to rate limit
+        resolverRS()
+        thatsthemip()
+        whoisip()   
+        whatismyip() # alpha
+        
+    # phone modules
+    if args.phonestuff:
+        thatsthemphone()
+        fouroneone()   # https://www.411.com/phone/1-417-967-2020
+        # phonecarrier()  #beta
+        validnumber()    #beta
+        whitepagesphone()
 
-        if args.emailmodules:  
-            # BingEmail()    # alpha
-            emailrep() #alpha
-            # facebookemail()    # alpha
-            # flickremail()    # alpha  add scraper Invalid API Key
-            # GoogleScrapeEmail() # todo
-            # lifestreamemail()# alpha
-            # linkedinemail()    # alpha stopped working
-            myspaceemail()    # add info, scrape url
-            # naymzemail()    # beta
-            # nikeplusemail()    # need login
-            # piplemail()        # add info    (takes 90 seconds per email)
-            # spokeo()            # needs work    (timeout error)
-            # stumbluponemail()# alpha need login
-            thatsthememail()    # https://thatsthem.com/email/smooth8101@yahoo.com
-            twitteremail()    
-            wordpresssearchemail()  # works
-            # YelpEmail()        # alpha
-            
-        if args.ips:  
-            print("checking :", ips)
-            geoiptool() # works but need need to rate limit
-            thatsthemip()
-            whoisip()   # beta
-            
-        # phone modules
-        if args.phonestuff:
-            thatsthemphone()
-            fouroneone()   # https://www.411.com/phone/1-417-967-2020
-            # phonecarrier()  #beta
-            validnumber()    #beta
-            whitepagesphone()
+    if args.test:  
+        truthSocial() # must manually verify
+        
+    if args.usersmodules:  
 
-        if args.test:  
-            instagramtwo()    # beta
-            
-        if args.usersmodules:  
-            # About()        # alpha
-            # badoo()    # beta add info
-            # bebo()              # down for upgrade
-            # bitbucket()        # add photo, note, name, info
-            # blackplanet()                    
-            # blogspot()  # works
-            # dailymotion()                               
-            # delicious()        # beta
-            # deviantart()                    
-            # digg()        # beta
-            disqus()                        
-            ebay()  # works
-            # etsy()    
-            facebook()  # works
-            # ffffound()        # beta add inf
-            flickr()   # add photo, note, name, info
-            # formspring()    # beta add title & info
-            # github()            
-            # GoogleScrape()    # beta
-            gravatar()  # works
-            # HackerRank()        # add inf
-            # hackthissite()        # add inf
-            # hi5()        # add inf (stopped working)
-            # hi52()        # beta add inf
-            # hulu()        # beta add inf # may need new profile url
-            imageshack()    # works
-            # imgur()                                      
-            instagram()   # always fails
-            instructables() # works
-            # justintv()        # add info
-            # kickstarter()        # add info                    
-            kik()   # alpha
-            # kongregate()        # add info
-            # lastfm()            # add info
-            # lifestream()        # add info
-            # leakedin()        # beta
-            # linkedin()        # needs auth
-            # LiveJournal()        # add info    
-            # mapmywalk()        # add info
-            # mobypicture()    # add info
-            # MyLife()            # add info
-            myspace()        # add info
-            # netlog()
-            # okcupid()        # add info
-            # pastebin()        # add info
-            # pandora()                 # add info
-            # peepmail()        # alpha
-            # photobucket()    
-            pinterest() # works
-            # pipl()            # alpha
-            # pwned()                            
-            # rankmyhack()    # website offline
-            # reddit()                                                                  
-            # scribd()            
-            # slideshare()        # add info
-            # softpedia()        
-            spotify()   # works
-            # stumblupon()        
-            # squidoo()                                                                                  
-            # tagged()        # add info
-            # technorati()        # add info
-            # telegram()    # alpha
-            tiktok()    # todo
-            # thingiverse()        # add info    
-            # topsy()        # alpha add info
-            # tumblr()                        
-            # twitter()   # fails
-            # twitterfriends()    # alpha add info
-            # typepad()        # add info (verify)
-            # ustream()        # add info 
-            venmo() # alpha
-            # Vimeo()            
-            # webshots()        # now requires auth
-            # wifeswap()        # beta
-            # wordpress() # works test
-            wordpressprofiles()    
-            # xanga()            # beta    add info
-            # Xing()            
-            # yahooprofile()    # alpha    add info
-            # Yfrog()            # add info
-            youtube()   # works
+        # About()   # alpha
+        # badoo()   # beta add info
+        # bebo()    # down for upgrade
+        bitbucket() # add fullname will blow error if no internet
+        # bitcoinforum() # alpha # https://bitcoinforum.com/profile/alex
+        # blackplanet()    
+        # blogspot()  # works
+        # dailymotion()       
+        # delicious()# beta
+        # deviantart()    
+        # digg()# beta
+        disqus()
+        ebay()  # works
+        # etsy()    # https://www.etsy.com/people/kevinrose
+        facebook()  # works
+        # ffffound()# beta add inf
+        #       # https://www.fiverr.com/samanvay 
+        flickr()   # add photo, note, name, info
+        #       # https://friendfinder.com/profile/john
+        # formspring()    # beta add title & info
+        # foursquare    # https://foursquare.com/john 
+        # github()      # https://github.com/test      
+        # GoogleScrape()    # beta
+        gravatar()  # works http://en.gravatar.com/profiles/kevinrose.json
+        # HackerRank()# add inf
+        # hackthissite()# add inf
+        # hi5()# add inf (stopped working)
+        # hi52()# beta add inf
+        # hulu()# beta add inf # may need new profile url
+        imageshack()    # works
+        # imgur()      
+        instagram()   # always fails
+        instructables() # works
+        # justintv()# add info
+        # kickstarter()# add info    
+        kik()   # alpha
+        # kongregate()# alpha  # https://www.kongregate.com/accounts/kevinrose
+        # lastfm()    # add info
+        # lifestream()# add info
+        # leakedin()# beta
+        # linkedin()# needs auth
+        # LiveJournal()# add info    
+        # mapmywalk()# add info
+        # mobypicture()    # add info
+        # MyLife()    # add info
+        #       # https://john.myshopify.com/
+        myspace()# add info
+        # netlog()
+        # okcupid()# add info
+        # pastebin()# add info https://pastebin.com/u/test
+        # pandora() # add info
+        #       # alpha  https://www.patreon.com/kevinrose/creators
+        # peepmail()# alpha
+        # photobucket()   https://app.photobucket.com/u/kevinrose 
+        pinterest() # works
+        # pipl()    # alpha
+        # pwned()    
+        # rankmyhack()    # website offline
+        # reddit()  
+        # scribd()    
+        # slideshare()# add info
+        # softpedia()
+        snapchat()    # must manually verify
+        spotify()   # works
+        # stumblupon()
+        # squidoo()  
+        # tagged()# add info
+        # technorati()# add info
+        # telegram()    # alpha
+        tiktok()    # todo
+        #       # todo https://tinder.com/@john
+        # thingiverse()# add info    
+        # topsy()# alpha add info
+        truthSocial()
+        #   # alpha https://www.tripadvisor.com/Profile/kevinrose
+        # tumblr() https://test.tumblr.com/   
+        # twitter()   # fails
+        # twitterfriends()    # alpha add info
+        # typepad()# add info (verify)
+        # ustream()# add info 
+        venmo() # alpha
+        # vimeo()   # https://vimeo.com/john
+        # webshots()# now requires auth
+        whatsmyname()
+        # wifeswap()# beta
+        # wordpress() # works test
+        wordpressprofiles()    
+        # xanga()    # beta    add info
+        # Xing()    
+        # yahooprofile()    # alpha    add info
+        # Yfrog()    # add info
+        youtube()   # works
 
-
-        if args.websites:  
-            # Bing()        # alpha
-            titles()    # alph
-            whoiswebsite()    # works
-            
-        # if args.websites:
-             # row = read_url(row)
-            # row = read_url()
+    if args.websites:  
+        # Bing()# alpha
+        titles()    # alph
+        whoiswebsite()    # works
 
     # set linux ownership    
     if sys.platform == 'win32' or sys.platform == 'win64':
@@ -476,7 +508,20 @@ def blogspot(): # testuser = kevinrose
             write_ossint(user, '4 - blogspot', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
 
+def bitbucket(): # testuser = kevinrose
 
+    print('\n\t<<<<< Checking bitbucket against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://bitbucket.org/%s/' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if '404' not in pagestatus:
+            # grab display_name = fullname
+            print(url, titleurl) 
+            write_ossint(user, '4 - bitbucket', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)   
+                
 def create_ossint_xlsx():
     global workbook
     workbook = xlsxwriter.Workbook(Spreadsheet)
@@ -630,7 +675,19 @@ def emailrep():# testEmail= smooth8101@yahoo.com
             write_ossint(email, '9 - emamilrep', '', url, email, '', '', '', '', ''
                 , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
+def etsy(): # testuser = kevinrose https://www.etsy.com/people/kevinrose
 
+    print('\n\t<<<<< Checking etsy against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://www.etsy.com/people/%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if '404' not in pagestatus:
+            # grab display_name = fullname
+            print(url, titleurl) 
+            write_ossint(user, '4 - etsy', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)   
 
 def facebook(): # testuser = kevinrose
 
@@ -719,7 +776,7 @@ def geoiptool():    # testuser= 77.15.67.232
         write_ossint(ip, '6 - geodatatool', '', url, '', '', '', ip, '', ''
         , city, state, zip, country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
-def gravatar(): # testuser = kevinrose
+def gravatar(): # testuser = kevinrose      http://en.gravatar.com/profiles/kevinrose.json
 
     print('\n\t<<<<< Checking gravatar against a list of users >>>>>')
     for user in users:    
@@ -772,7 +829,7 @@ def instagram():    # testuser=    kevinrose     # add info
         # except:
             # pass
         # time.sleep(3) # will sleep for 3 seconds
-        write_ossint(user, '67 - instagram.com friends: grab info', '', url, '', user, '', '', '', ''
+        write_ossint(user, '6 - instagram.com friends: grab info', '', url, '', user, '', '', '', ''
             , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
         print(g + url + content + o)    
 
@@ -834,6 +891,31 @@ def instructables(): # testuser = kevinrose
             write_ossint(user, '4 - instructables', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
 
+def internet(host="8.8.8.8", port=53, timeout=3):
+    """
+    Host: 8.8.8.8 (google-public-dns-a.google.com)
+    OpenPort: 53/tcp
+    Service: domain (DNS/TCP)
+    """
+    try:
+        socket.setdefaulttimeout(timeout)
+        socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+        return True
+    except socket.error as ex:
+        print(ex)
+        return False
+        
+def noInternetMsg():
+    '''
+    prints a pop-up that says "Connect to the Internet first"
+    '''
+    window = Tk()
+    window.geometry("1x1")
+      
+    w = Label(window, text ='Translate-Inator', font = "100") 
+    w.pack()
+    messagebox.showwarning("Warning", "Connect to the Internet first") 
+    
 def kik(): # testuser = kevinrose
     print('\n\t<<<<< Checking kik against a list of users >>>>>')
     for user in users:    
@@ -1112,7 +1194,7 @@ def read_url():
         print('%s%s    %s%s    %s    %s%s    %s' % (b, note, g, osurl, r, titleurl, o, pagestatus))
 
 def request(url):
-    (content,referer,osurl,titleurl,pagestatus) = ('','','','','')
+    (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
     if url.lower().startswith('http'):
         page = requests.get(url)
     else:
@@ -1168,7 +1250,57 @@ def request(url):
     titleurl = titleurl.strip()
     content = content.strip()
     
-    return (content,referer,osurl,titleurl,pagestatus)    
+    return (content, referer, osurl, titleurl, pagestatus)    
+
+def resolverRS():# testIP= 77.15.67.232
+    print(y + '\n\t<<<<< Checking resolverRS against a list of ' + b + 'ip' + y + ' >>>>>' + o)
+    
+    for ip in ips:
+        (country, city, zip, case, note, state) = ('', '', '', '', '', '')
+        (misc, info) = ('', '')
+        
+        url = ('https://resolve.rs/ip/geolocation.html?ip=%s' %(ip))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        for eachline in content.split("\n"):
+            if "403 ERROR" in eachline:
+                pagestatus = '403 Error'
+                content = ''
+            # elif "Found 0 results for your query" in eachline:
+                # print("not found")  # temp
+                # url = ('')
+            # elif "td id=\"maxmind" in eachline :   # and zip != ''
+                # note = eachline
+                # print(note) # temp
+
+
+            elif "\"code\": \"" in eachline :   # and zip != ''
+                zip = eachline.split("\"")[3]
+            elif "\"en\": \"" in eachline :   # city
+                print('')
+                if city == '':
+                    city = eachline.split("\"")[3]
+                elif misc == '' and city != '': # continent
+                    misc = eachline.split("\"")[3]
+
+                elif misc != '' and country == '' and city != '': # country
+                    country = eachline.split("\"")[3]
+                elif info == '' and misc != '' and country != '' and city != '':    # registered country
+                    info = eachline.split("\"")[3]
+                elif state == '' and info != '' and misc != '' and country != '' and city != '':    # state
+                    state = eachline.split("\"")[3]
+            elif "COMCAST" in eachline :   # isp  >ASN</a>
+                note = 'COMCAST'
+                # print(note) # temp
+
+
+        # pagestatus = ''                
+        if url != '':
+            print(url, ip) 
+            write_ossint(ip, '6 - resolve.rs', '', url, '', '', '', ip, '', ''
+                , city, state, zip, country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, referer, '', titleurl, pagestatus)
+
+
 
 
 def samples():
@@ -1195,6 +1327,7 @@ thekevinrose
 williger
 zazenergy
 nullcrew
+realDonaldTrump
 
         Sample Emails are:
 
@@ -1219,6 +1352,21 @@ tin_max87@yahoo.com
 708-372-8101
 '''
 )    
+
+def snapchat(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking snapchat against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', 'research', '')
+        user = user.rstrip()
+        url = ('https://www.snapchat.com/add/@%s?' %(user))
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if 'This content was not found' in content:
+            pagestatus = '404 fail'
+        # fullname = titleurl
+        print(url, titleurl, content) 
+        write_ossint(user, '8 - snapchat', fullname, url, '', user, '', '', '', ''
+            , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
 
 
 def spotify(): # testuser = kevinrose
@@ -1342,13 +1490,11 @@ def tiktok(): # testuser = kevinrose
         (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', 'research', '')
         user = user.rstrip()
         url = ('http://tiktok.com/@%s?' %(user))
-        # (content, referer, osurl, titleurl, pagestatus) = request(url)
-        # titleurl = titleurl.replace(' - YouTube','')
         if 't find this account' in content:
             pagestatus = '404 fail'
         fullname = titleurl
         print(url, titleurl) 
-        write_ossint(user, '70 - tiktok', fullname, url, '', user, '', '', '', ''
+        write_ossint(user, '7 - tiktok', fullname, url, '', user, '', '', '', ''
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
 
         # if '404' not in titleurl:
@@ -1379,6 +1525,40 @@ def titles():    # testsite= google.com
         print(y, website , pagestatus,  o)
         write_ossint(url, '7 ', '', url, '', '', '', '', '', ''
             , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', dnsdomain, '', '', content, referer, osurl, titleurl, pagestatus)
+
+def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDonaldTrump
+
+    print('\n\t<<<<< Checking truthsocial.com against a list of users >>>>>')
+    for user in users:    
+        (city, country, note, fullname, titleurl, pagestatus) = ('', '', '', '', '', '')
+        (info, ranking) = ('', '9 - truthsocial.com')
+        user = user.rstrip()
+        url = ('https://truthsocial.com/@%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        pagestatus = ''
+        for eachline in content.split("  <"):
+            if 'This resource could not be found' in eachline:
+                pagestatus = '404'
+            elif "og:title" in eachline:
+                titleurl = eachline.strip().split("\"")[1]
+                fullname = titleurl.split(" (")[0]
+                
+                if titleurl == 'Truth Social':
+                    pagestatus = '404'
+                else:
+                    pagestatus = '200'
+                    ranking = '3 - truthsocial.com'
+                # print(fullname) # temp
+            elif "og:description" in eachline:
+                note = eachline.strip().split("\"")[1]
+ 
+        if '200' in pagestatus: 
+        # if '404' not in pagestatus:
+            print(url, fullname) 
+            write_ossint(user, ranking, fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)  
+
         
 def twitter():    # testuser=    kevinrose     # add info
     print('\n\t<<<<< Checking twitter against a list of users >>>>>')
@@ -1451,7 +1631,7 @@ def validnumber():# testPhone= 708-372-8101
 
 
 
-def venmo(): # testuser = kevinrose
+def venmo(): # testuser = kevinrose https://account.venmo.com/u/kevinrose
 
     print('\n\t<<<<< Checking venmo against a list of users >>>>>')
     for user in users:    
@@ -1475,6 +1655,41 @@ def venmo(): # testuser = kevinrose
             write_ossint(user, '9 - venmo', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
 
+def whatismyip():    # testuser= 77.15.67.232  
+    print('\n\t<<<<< Checking whatismyipaddress.com against a list of IPs >>>>>')
+    for ip in ips:
+        (country, city, state, zip, pagestatus, title) = ('', '', '', '', '', '')
+        url = ('https://whatismyipaddress.com/ip/%s' %(ip))
+        
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        (content, titleurl) = ('', '')
+
+        # for content in content.split("meta property"):
+            # print('hello world') # temp
+            # print(content)  # temp
+            # if "og:description" in content:
+                # print(content) # temp
+                # info = content.strip().split("\"")[1]
+                # print(info) # temp
+            # elif "og:title" in content:
+                # titleurl = content.strip().split("\"")[1]
+                # print(titleurl) # temp
+
+        # time.sleep(7) #will sleep for 30 seconds
+        write_ossint(ip, '9 - whatismyipaddress', '', url, '', '', '', ip, '', ''
+        , city, state, zip, country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, titleurl, pagestatus)
+
+def whatsmyname(): # testuser = kevinrose
+
+    # print('\n\t<<<<< Checking venmo against a list of users >>>>>')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city) = ('')
+        user = user.rstrip()
+        url = ('https://whatsmyname.app/')
+        write_ossint(user, '9 - manual', '', url, '', user, '', '', '', ''
+            , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'fail')    
 
 def whitepagesphone():# testuser=    210-316-9435
     print('\n\t<<<<< Checking whitepages against a list of users >>>>>')
@@ -1488,7 +1703,7 @@ def whitepagesphone():# testuser=    210-316-9435
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')
     
 
-def whoisip():    # testuser=    77.15.67.232
+def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
     from subprocess import call, Popen, PIPE
     print('\n\t<<<<< Checking whois against a list of IP\'s >>>>>')
 
@@ -1563,7 +1778,7 @@ def whoisip():    # testuser=    77.15.67.232
                 elif line.lower().startswith('org-name:'):entity = (line.split(': ')[1].lstrip())
         
         print(y + ip, country, city, zip +o)
-        write_ossint(ip, '7 - whois', fullname, url, email, '', phone, ip, entity, fulladdress
+        write_ossint(ip, '9 - whois', fullname, url, email, '', phone, ip, entity, fulladdress
             , city, state, zip, country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
 
 def whoiswebsite():    # testsite= google.com
@@ -1711,9 +1926,13 @@ def write_ossint(query, ranking, fullname, url, email , user, phone, ip, entity,
     if 'Fail' in pagestatus:  #
         format_function(bg_color='red')
     elif 'fail' in pagestatus or 'research' in pagestatus:  
-        format_function(bg_color='orange')
+        # format_function(bg_color='orange')
+        format_function(bg_color='#FFc000')         # orange  
+        
+        
+        
     # elif 'google' in url:  #
-        # format_function(bg_color='green')
+        # format_function(bg_color='#92D050')  # green
     else:
         format_function(bg_color='white')
     
@@ -1785,19 +2004,15 @@ def usage():
     print("\nExample:")
     # print("\t" + file + " -u -I input.txt -O out_urls.xlsx\t\t")
     # print("\t" + sys.argv[0] +" -C -I input.txt -O out_ossint.xlsx")
-    print("\t" + sys.argv[0] +" -E -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -i -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -t -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -s ")
-    print("\t" + sys.argv[0] +" -p -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -U -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -W -I input.txt -O Intel_.xlsx")
-    print("\t" + sys.argv[0] +" -i -p -U -W -I input.txt -O Intel_.xlsx")
-    
-    # print("\t" + sys.argv[0] +" -E -i -U -I input.txt -O output.csv")    
- 
 
-#  print("\t" + file +" -s -I nodes.txt -O out_second.xls")
+    print("\t" + sys.argv[0] +" -E")
+    print("\t" + sys.argv[0] +" -i")
+    print("\t" + sys.argv[0] +" -t")
+    print("\t" + sys.argv[0] +" -s ")
+    print("\t" + sys.argv[0] +" -p")
+    print("\t" + sys.argv[0] +" -U")
+    print("\t" + sys.argv[0] +" -W")
+    print("\t" + sys.argv[0] +" -E -i -p -U -W")
 
 
 if __name__ == '__main__':
@@ -1806,20 +2021,93 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<< Revision History >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+2.7.6 - internet checker, removed -I and -O requirement
 1.0.0 - kik
-0.0.2 - python2to3 conversion
-0.0.1 - based on Password_recheckinator.py
 """
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<< Future Wishlist  >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+tkinter purely gui interface
+exe version
+
+https://whatismyipaddress.com/ip/73.176.34.241
+
 instagramtwo()
 create a new identity_hunt with xlsx and requests instead of urllib2
 python sherlock kevinrose # mirror sherlock
-https://whatsmyname.app/
+
+https://github.com/webbreacher/whatsmyname
 https://validnumber.com/phone-number/3124377966/
 https://ttlc.intuit.com/community/user/viewprofilepage/user-id/_95
+
+https://bitcoinforum.com/profile/alex
+http://en.gravatar.com/profiles/kevinrose.json
+https://john.myshopify.com/
+https://test.tumblr.com/
+
+https://foursquare.com/john
+https://friendfinder.com/profile/john
+https://pastebin.com/u/test
+https://app.photobucket.com/u/kevinrose
+https://vimeo.com/john
+
+https://www.fiverr.com/samanvay 
+https://www.flickr.com/photos/kevinrose
+https://www.kongregate.com/accounts/kevinrose
+https://www.patreon.com/kevinrose/creators
+https://www.tripadvisor.com/Profile/kevinrose
+https://tinder.com/@john
+
+
+https://anonup.com/@%s
+
+https://chaos.social/@%s
+
+https://ws2.kik.com/user/%s
+https://www.kaggle.com/%s
+http://archive.org/wayback/available?url=https://parler.com/profile/%s
+http://archive.org/wayback/available?url=https://twitter.com/%s
+http://archive.org/wayback/available?url=https://twitter.com/%s/status/*
+
+
+https://discuss.codecademy.com/u/%s/summary
+https://disqus.com/by/%s/
+https://forums.moneysavingexpert.com/profile/%s
+
+
+https://github.com/%s
+https://hackaday.io/%s
+https://keybase.io/%s
+
+
+https://social.technet.microsoft.com/profile/%s/
+https://soundcloud.com/%s
+https://steamcommunity.com/id/%s
+
+
+https://www.blogger.com/profile/%s
+https://www.dailymotion.com/%s
+https://www.duolingo.com/2017-06-30/users?username=%s&_=1628308619574
+
+
+https://www.geocaching.com/p/?u=%s
+https://www.instructables.com/member/%s/
+https://www.kickstarter.com/profile/%s
+
+https://www.massageanywhere.com/profile/%s
+https://www.myfitnesspal.com/user/%s/status
+
+https://www.photoblog.com/%s/
+https://www.slideshare.net/%s
+https://www.theguardian.com/profile/%s
+https://www.tiktok.com/@kevinrose?lang=en
+
+https://www.udemy.com/user/%s/
+https://www.xboxgamertag.com/search/%s
+
+https://www.yelp.com/user_details?userid=GHoG4X4FY8D8L563zzPX5w
+https://psnprofiles.com/xhr/search/users?q=ikemenzi
 
 """
 
