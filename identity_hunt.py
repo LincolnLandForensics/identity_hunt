@@ -26,6 +26,7 @@ except:
 import os
 import re
 import sys
+import json
 import time
 import random
 import socket
@@ -45,7 +46,7 @@ from tkinter import messagebox
 author = 'LincolnLandForensics'
 description = "OSING: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.7.6'
+version = '2.7.8'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -165,7 +166,9 @@ def main():
         emailrep() #alpha
         # facebookemail()    # alpha
         # flickremail()    # alpha  add scraper Invalid API Key
+        ghunt()
         # GoogleScrapeEmail() # todo
+        holehe_email()
         # lifestreamemail()# alpha
         # linkedinemail()    # alpha stopped working
         myspaceemail()    # add info, scrape url
@@ -192,21 +195,25 @@ def main():
         thatsthemphone()
         fouroneone()   # https://www.411.com/phone/1-417-967-2020
         # phonecarrier()  #beta
+        reversephonecheck()
+        spydialer()
         validnumber()    #beta
         whitepagesphone()
-
+        whocalld()
+        reversephonecheck()
+        
     if args.test:  
-        truthSocial() # must manually verify
+        venmo() # must manually verify 
         
     if args.usersmodules:  
 
-        # About()   # alpha
+        # about()   # alpha
         # badoo()   # beta add info
         # bebo()    # down for upgrade
         bitbucket() # add fullname will blow error if no internet
         # bitcoinforum() # alpha # https://bitcoinforum.com/profile/alex
         # blackplanet()    
-        # blogspot()  # works
+        blogspot()  # works
         # dailymotion()       
         # delicious()# beta
         # deviantart()    
@@ -221,6 +228,7 @@ def main():
         #       # https://friendfinder.com/profile/john
         # formspring()    # beta add title & info
         # foursquare    # https://foursquare.com/john 
+        garmin()
         # github()      # https://github.com/test      
         # GoogleScrape()    # beta
         gravatar()  # works http://en.gravatar.com/profiles/kevinrose.json
@@ -234,7 +242,7 @@ def main():
         instagram()   # always fails
         instructables() # works
         # justintv()# add info
-        # kickstarter()# add info    
+        # kickstarter() # access denied    
         kik()   # alpha
         # kongregate()# alpha  # https://www.kongregate.com/accounts/kevinrose
         # lastfm()    # add info
@@ -243,6 +251,8 @@ def main():
         # linkedin()# needs auth
         # LiveJournal()# add info    
         # mapmywalk()# add info
+        # mapmytracks() # always 404
+        mastadon()
         # mobypicture()    # add info
         # MyLife()    # add info
         #       # https://john.myshopify.com/
@@ -251,11 +261,15 @@ def main():
         # okcupid()# add info
         # pastebin()# add info https://pastebin.com/u/test
         # pandora() # add info
-        #       # alpha  https://www.patreon.com/kevinrose/creators
+        parler()
+        paypal()
+        patreon() # alpha  https://www.patreon.com/kevinrose/creators
         # peepmail()# alpha
         # photobucket()   https://app.photobucket.com/u/kevinrose 
         pinterest() # works
         # pipl()    # alpha
+        poshmark()    
+        public()    
         # pwned()    
         # rankmyhack()    # website offline
         # reddit()  
@@ -268,7 +282,7 @@ def main():
         # squidoo()  
         # tagged()# add info
         # technorati()# add info
-        # telegram()    # alpha
+        # telegram()    # alpha always a 200
         tiktok()    # todo
         #       # todo https://tinder.com/@john
         # thingiverse()# add info    
@@ -280,12 +294,12 @@ def main():
         # twitterfriends()    # alpha add info
         # typepad()# add info (verify)
         # ustream()# add info 
-        venmo() # alpha
+        # venmo() # fails
         # vimeo()   # https://vimeo.com/john
         # webshots()# now requires auth
         whatsmyname()
         # wifeswap()# beta
-        # wordpress() # works test
+        wordpress() # works
         wordpressprofiles()    
         # xanga()    # beta    add info
         # Xing()    
@@ -467,6 +481,26 @@ def master():
     return users,ips,emails,phones
     # return USERS,IPS,EMAILS        
 
+def about(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking about.me against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://about.me/%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        for eachline in content.split("\n"):
+            if " | about.me" in eachline:        
+                fullname = eachline.strip().replace(" | about.me","") # .split("-")(0)
+                # note = fullname = eachline.strip().split("-")(1).replace(" | about.me","")
+         
+        if '404' not in pagestatus:
+            # fullname = titleurl
+            print(url, titleurl) 
+            write_ossint(user, '3 - about.me', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', titleurl, pagestatus)        
+
+
 def fouroneone():# testPhone= 708-372-8101  view-source:https://www.411.com/phone/1-417-967-2020
     print(y + '\n\t<<<<< Checking 411 against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     
@@ -516,11 +550,17 @@ def bitbucket(): # testuser = kevinrose
         user = user.rstrip()
         url = ('https://bitbucket.org/%s/' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
+        # for eachline in content.split("\n"):
+            # if "display_name" in eachline:
+                # fullname = eachline
+        
         if '404' not in pagestatus:
             # grab display_name = fullname
             print(url, titleurl) 
             write_ossint(user, '4 - bitbucket', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)   
+
                 
 def create_ossint_xlsx():
     global workbook
@@ -717,7 +757,7 @@ def flickr(): # testuser = kevinrose
         (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', '', '')
         (note) = ('')
         user = user.rstrip()
-        url = ('http://www.flickr.com/people/%s' %(user))
+        url = ('https://www.flickr.com/people/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         # content = content.replace('\n',' ') # beta
         # for eachline in content.split("\n"):
@@ -745,6 +785,37 @@ def format_function(bg_color='white'):
     format = workbook.add_format({
         'bg_color': bg_color
     })
+
+def garmin(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking garmin against a list of users >>>>>')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city) = ('')
+        user = user.rstrip()
+
+        url = ('https://connect.garmin.com/modern/profile/%s' %(user))
+
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
+        # try:
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # except:
+            # pass
+        # if 1==1:
+        # print(content)
+        # if user in content:
+        if 'twitter:card' not in content:
+        
+            fullname = titleurl
+            fullname = fullname.split(" (")[0]
+            print(url, fullname) 
+            write_ossint(user, '9 - garmin', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
+
+
+
     
 def geoiptool():    # testuser= 77.15.67.232
     # print('\n\t<<<<< Checking geoiptool against a list of IPs >>>>>')
@@ -776,6 +847,17 @@ def geoiptool():    # testuser= 77.15.67.232
         write_ossint(ip, '6 - geodatatool', '', url, '', '', '', ip, '', ''
         , city, state, zip, country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
+def ghunt():# testEmail= kevinrose@gmail.com   
+    for email in emails:
+        note = ('cd C:\Forensics\scripts\python\git-repo\GHunt && ghunt email %s' %(email)) 
+        if email.endswith('gmail.com'):
+            ranking = ('2 - ghunt')
+        else:
+            ranking = ('9 - ghunt')  
+        write_ossint(note, ranking, '', '', email, '', '', '', '', ''
+        , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'research')
+
+
 def gravatar(): # testuser = kevinrose      http://en.gravatar.com/profiles/kevinrose.json
 
     print('\n\t<<<<< Checking gravatar against a list of users >>>>>')
@@ -784,12 +866,22 @@ def gravatar(): # testuser = kevinrose      http://en.gravatar.com/profiles/kevi
         user = user.rstrip()
         url = ('http://en.gravatar.com/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
         if '404' not in pagestatus:
             fullname = titleurl
             print(url, titleurl) 
             write_ossint(user, '4 - gravatar', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
 
+def holehe_email():# testEmail= kevinrose@gmail.com
+    print(y + '\n\t<<<<< Checking holehe against a list of ' + b + 'emails' + y + ' >>>>>' + o)
+    
+    for email in emails:
+        (country, city, zip, case) = ('', '', '', '')
+        
+        url = ('cd C:\Forensics\scripts\python\git-repo\holehe && holehe -NP --no-color --no-clear --only-used %s' %(email))
+        write_ossint(email, '9 - manual', '', url, email, '', '', '', '', ''
+            , '', '', '', '', 'https://github.com/megadose/holehe', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'research')
 
 def imageshack(): # testuser = ToddGilbert
 
@@ -879,11 +971,11 @@ def instagramtwo(): #alpha
 
 def instructables(): # testuser = kevinrose
 
-    print('\n\t<<<<< Checking instructablest against a list of users >>>>>')
+    print('\n\t<<<<< Checking instructables against a list of users >>>>>')
     for user in users:    
         (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
         user = user.rstrip()
-        url = ('http://www.instructables.com/member/%s' %(user))
+        url = ('https://www.instructables.com/member/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         if '404' not in pagestatus:
             fullname = titleurl
@@ -915,6 +1007,33 @@ def noInternetMsg():
     w = Label(window, text ='Translate-Inator', font = "100") 
     w.pack()
     messagebox.showwarning("Warning", "Connect to the Internet first") 
+
+def kickstarter(): # testuser = kevinrose
+    print('\n\t<<<<< Checking kickstarter against a list of users >>>>>')
+    for user in users:    
+        (fullname, titleurl, pagestatus, content) = ('', '', '', '')
+        (note, firstname, lastname, photo, misc, lastseen) = ('', '', '', '', '', '')
+
+        user = user.rstrip()
+        url = ('https://www.kickstarter.com/profile/%s' %(user))
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # for eachline in content.split(","):
+            # if "firstName" in eachline:
+                # firstname = eachline.strip().split(":")[1]
+                # firstname = firstname.strip('\"')
+            # elif "lastName" in eachline:
+                # lastname = eachline.strip().split(":")[1]
+                # lastname = lastname.strip('\"')
+            # elif "displayPicLastModified" in eachline:
+                # note = eachline.strip().split(":")[1]
+            # elif "displayPic\"" in eachline:
+                # photo = eachline.strip().split(":\"")[1].replace("\\","")
+            # fullname = ('%s %s' %(firstname,lastname))
+        if '404' not in pagestatus:
+            print("%s = %s" %(url, fullname)) # temp
+            write_ossint(user, '9 - kickstarter', fullname, url, '', user, '', '', '', ''
+                , '', '', '', '', note, '', '', '', '', misc, lastname, firstname, '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', '', titleurl, pagestatus)        
+
     
 def kik(): # testuser = kevinrose
     print('\n\t<<<<< Checking kik against a list of users >>>>>')
@@ -976,13 +1095,69 @@ def linkedin():    # testuser=    kevinrose     # grab info
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
             print(g , url, '\t', y , fullname ,  o)
 
+def mapmytracks(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking mapmytracks against a list of users >>>>>')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city) = ('')
+        user = user.rstrip()
+
+        url = ('https://www.mapmytracks.com/%s' %(user))
+
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
+        # try:
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # except:
+            # pass
+        # if 1==1:
+        # print(content)
+        # if user in content:
+        if 'nothing to see here' not in content:   # fixme
+        
+            fullname = titleurl
+            fullname = fullname.split(" (")[0]
+            print(url, fullname) 
+            write_ossint(user, '9 - mapmytracks', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
+
+def mastadon(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking mastadon against a list of users >>>>>')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city, note, info, email, content, pagestatus) = ('', '', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://mastodon.social/@%s' %(user))
+        note = ('https://mastodon.social/api/v2/search?q=%s' %(user))
+
+        for eachline in content.split("\n"):
+            if "og:title" in eachline:
+                fullname = eachline.strip().split("\"")[1].split(' (')[0]
+                print(url, fullname) 
+
+        if 'accounts\":[{' in content:        
+            data = json.loads(content)              # Convert JSON data to Python dictionary
+            fullname = data["accounts"][0]["display_name"]
+            info = data['accounts'][0]['avatar']
+
+            write_ossint(user, '3 - mastadon', fullname, url, email, user, '', '', '', ''
+                , city, '', '', country, note, '', '', '', info, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
+        else:
+            write_ossint(user, '9 - mastadon', fullname, url, email, user, '', '', '', ''
+                , city, '', '', country, note, '', '', '', info, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', pagestatus)
+
+
 def myspace(): # testuser = kevinrose
 
     print('\n\t<<<<< Checking myspace against a list of users >>>>>')
     for user in users:    
         (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
         (photo, country, website, email, language, username) = ('','','','','','')
-        (city) = ('')
+        (city, content, titleurl, pagestatus) = ('', '', '', '')
         user = user.rstrip()
         url = ('https://myspace.com/%s' %(user))
 
@@ -990,11 +1165,15 @@ def myspace(): # testuser = kevinrose
             (content, referer, osurl, titleurl, pagestatus) = request(url)
         except:
             pass
+        for eachline in content.split("\n"):
+            if "og:title" in eachline:
+                fullname = eachline.strip().split("\"")[1].split(' (')[0]
+                print(url, fullname) 
 
         if 'Success' in pagestatus:
-            fullname = titleurl
-            fullname = fullname.split(" (")[0]
-            print(url, fullname) 
+            # fullname = titleurl
+            # fullname = fullname.split(" (")[0]
+            # print(url, fullname) 
             write_ossint(user, '4 - myspace', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
          
@@ -1002,7 +1181,7 @@ def myspaceemail():# testEmail= kandyem@yahoo.com   267619602
     print(y + '\n\t<<<<< Checking myspace against a list of ' + b + 'emails' + y + ' >>>>>' + o)
     
     for email in emails:
-        (country, city, zip, case) = ('', '', '', '')
+        (fullname, country, city, zip, case) = ('', '', '', '', '')
         
         url = ('http://www.myspace.com/search/people?q=%s&ac=t' %(email))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -1012,11 +1191,100 @@ def myspaceemail():# testEmail= kandyem@yahoo.com   267619602
                 case = eachline.strip().split(" data-id=")[1]
                 case = case.replace("\"", "").split(" ")[0]
                 url = ('https://myspace.com/%s' %(case))
+            elif "og:title" in eachline:
+                fullname = eachline.strip().split("\"")[1].replace('Search Myspace','')
+                print(fullname) # temp
+
+
 
         if ('%') not in url: 
             print(url, email) 
-            write_ossint(email, '5 - myspace.com', '', url, email, '', '', '', '', ''
+            write_ossint(email, '5 - myspace.com', fullname, url, email, '', '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
+
+def parler(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking parler against a list of users >>>>>')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city) = ('')
+        (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
+        user = user.rstrip()
+
+        url = ('https://parler.com/%s' %(user))
+
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
+        # try:
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # except:
+            # pass
+        if 'User not found' not in content:
+            fullname = titleurl
+            fullname = fullname.split(" (")[0]
+            print(url, fullname) 
+            write_ossint(user, '9 - parler', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+
+def patreon(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking patreon against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://www.patreon.com/%s/creators' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if '404' not in pagestatus:
+            fullname = titleurl
+            print(url, titleurl) 
+            write_ossint(user, '5 - patreon', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
+
+
+def paypal(): # testuser = kevinrose
+
+    print('\n\t<<<<< Checking paypal against a list of users >>>>>')
+    for user in users:    
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://www.paypal.com/paypalme/%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        (note) = ('')
+        if '404' not in pagestatus:
+            for eachline in content.split("\n"):
+                if eachline == "": pass                                             # skip blank lines
+                else:
+                    # define the regular expression pattern
+                    pattern = r'{"userInfo":{(.*?)}}'
+
+                    # match the pattern to the input string
+                    match = re.search(pattern, content)
+
+                    # extract the data variable from the match object
+                    if match:
+                        data = match.group(1)
+                        # print(data)
+                        note = data
+                        # define regular expression pattern
+                        displayNamepattern = r'"displayName":"(\w+)"'
+
+                        # search for pattern in input string
+                        displayNamematch = re.search(displayNamepattern, note)
+
+                        # check if match was found
+                        if displayNamematch:
+                            # extract value after "displayName"
+                            fullname = displayNamematch.group(1)
+                            print(fullname)
+
+        
+        if '404' not in pagestatus:
+            fullname = titleurl
+            print(url, titleurl) 
+            write_ossint(user, '9 - paypal', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
+
 
 def phonecarrier():# testuser=    210-316-9435 +919876543210  #beta
     print('\n\t<<<<< Checking for phone carrier >>>>>')
@@ -1047,8 +1315,8 @@ def pinterest():    # testuser=    kevinrose     # add city
     for user in users:    
         (country, email, fullname,lastname,firstname) = ('', '', '','','')
         (success, note, photo, website, city, otherurls) = ('','','','','', '')
-        
-        url = ('http://www.pinterest.com/%s/' %(user))
+        (content) = ('')
+        url = ('https://www.pinterest.com/%s/' %(user))
         try:
             (content, referer, osurl, titleurl, pagestatus) = request(url)
            
@@ -1062,7 +1330,7 @@ def pinterest():    # testuser=    kevinrose     # add city
             # success = 1    
         except:
             pass
-        
+
         if 'Success' in pagestatus:
             for eachline in content.split("\n"):
                 if eachline == "": pass                                             # skip blank lines
@@ -1071,9 +1339,13 @@ def pinterest():    # testuser=    kevinrose     # add city
                         eachline = eachline.split('\"')
                         note = eachline[1]
 
-            write_ossint(user, '5 - pinterest', fullname, url, '', user, '', '', email, ''
-                , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')            
-            print(g + url + y + '\t', fullname , note, o)
+                    # elif "title\>" in eachline and "\(" in eachline:
+                        # fullname = eachline # temp
+                        # print("blah" , fullname) # temp
+            if note != 'true':
+                write_ossint(user, '4 - pinterest', fullname, url, '', user, '', '', email, ''
+                    , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')            
+                print(g + url + y + '\t', fullname , note, o)
                 
                 
 def plaxoemail():    # testEmail= craig@craigslist.org#
@@ -1107,7 +1379,65 @@ def print_logo():
         sys.stdout.write("\x1b[1;%dm%s%s\n" % (random.choice(colors), line, clear))
         time.sleep(0.05)
 
+def public():    # testuser=    kevinrose
+    print('\n\t<<<<< Checking public against a list of users >>>>>')
+    for user in users:    
+        (country, email, fullname,lastname,firstname) = ('', '', '','','')
+        (success, note, photo, website, city, otherurls) = ('','','','','', '')
+        (content) = ('')
+        url = ('https://public.com/@%s' %(user))
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
 
+
+            # success = 1    
+        except:
+            pass
+
+        if 'Success' in pagestatus:
+            for eachline in content.split("\n"):
+                if eachline == "": pass                                             # skip blank lines
+                elif "og:title" in eachline:
+                    fullname = eachline.strip().split("\"")[1]
+                    fullname = fullname.split(" (")[0]
+                    if ' ' in fullname:
+
+                        fullname2 = fullname.split(" ")
+                        firstname = fullname2[0]
+                        lastname = fullname2[1]
+              
+            if note != 'true':
+                write_ossint(user, '4 - public', fullname, url, '', user, '', '', email, ''
+                    , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')            
+                print(g + url + y + '\t', fullname , note, o)
+ 
+def poshmark():    # testuser=    kevinrose
+    print('\n\t<<<<< Checking public against a list of users >>>>>')
+    for user in users:    
+        (country, email, fullname,lastname,firstname) = ('', '', '','','')
+        (success, note, photo, website, city, otherurls) = ('','','','','', '')
+        (content) = ('')
+        url = ('https://poshmark.com/closet/%s' %(user))
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+
+            # success = 1    
+        except:
+            pass
+
+        if 'Success' in pagestatus:
+            for eachline in content.split("\n"):
+                if eachline == "": pass                                             # skip blank lines
+                elif "og:title" in eachline:
+                    fullname = eachline.strip().split("\"")[1].replace('\'s Closet', '')
+                    firstname = fullname
+
+            if note != 'true':
+                write_ossint(user, '7 - poshmark', fullname, url, '', user, '', '', email, ''
+                    , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')            
+                print(g + url + y + '\t', fullname , note, o)
+                
 def read_url():
     global row  # The magic to pass row globally
     style = workbook.add_format()
@@ -1300,7 +1630,42 @@ def resolverRS():# testIP= 77.15.67.232
             write_ossint(ip, '6 - resolve.rs', '', url, '', '', '', ip, '', ''
                 , city, state, zip, country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, referer, '', titleurl, pagestatus)
 
+def reversephonecheck():# testPhone= 708-372-8101
+    print(y + '\n\t<<<<< Checking reversephonecheck against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
+    for phone in phones:
+        (country, city, zip, case, note) = ('', '', '', '', '')
+        (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
+        (areacode, prefix, line) = ('', '', '')
+        phone = phone.replace('(','').replace(')','').replace(' ','')
+        
+        # print('phone = >%s<' %(phone))     #temp   
+        if "-" in phone:
+            phone2 = phone.split("-")
+            areacode = phone2[0]
+            prefix = phone2[1]
+            try:
+                line = phone2[2]
+                line2 = line
+                line = line[:2]
+                
+            except:
+                pass
+        # https://www.reversephonecheck.com/1-309/717/90/        
+        url = ('https://www.reversephonecheck.com/1-%s/%s/%s/' %(areacode, prefix, line))
 
+        
+        (content, referer, osurl, titleurl, pagestatus) = request(url) 
+        match = ("%s - %s" %(prefix, line2))
+        print('match = %s' %(match))    # temp
+        for eachline in content.split("\n"):
+            if match in eachline:
+                pagestatus = 'research'
+                print(eachline)
+        if pagestatus == 'research':
+ 
+            print(url) 
+            write_ossint(phone, '2 - reversephonecheck', '', url, '', '', phone, '', '', ''
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 
 def samples():
@@ -1375,13 +1740,25 @@ def spotify(): # testuser = kevinrose
     for user in users:    
         (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
         user = user.rstrip()
-        url = ('http://open.spotify.com/user/%s' %(user))
+        url = ('https://open.spotify.com/user/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         if '404' not in pagestatus:
             fullname = titleurl
             print(url, titleurl) 
             write_ossint(user, '4 - spotify', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
+
+def spydialer():# testPhone= 708-372-8101
+    for phone in phones:
+        (country, city, zip, case, note) = ('', '', '', '', '')
+        (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
+        phone = phone.replace('(','').replace(')','').replace(' ','')
+        # print('phone = >%s<' %(phone))     #temp   
+        url = ('https://www.spydialer.com')
+
+        pagestatus = 'research'        
+        write_ossint(phone, '3 - spydialer', '', url, '', '', phone, '', '', ''
+                , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
 def thatsthememail():# testEmail= smooth8101@yahoo.com   
     print(y + '\n\t<<<<< Checking thatsthem against a list of ' + b + 'emails' + y + ' >>>>>' + o)
@@ -1440,7 +1817,7 @@ def thatsthemphone():# testPhone= 708-372-8101
         (country, city, zip, case, note) = ('', '', '', '', '')
         phone = phone.replace('(','').replace(')','-')
         print('phone = >%s<' %(phone))        
-        url = ('https://thatsthem.com/phone/%s' %(phone))
+        url = ('https://thatsthem.com/phone/%s' %(phone))    # https://thatsthem.com/reverse-phone-lookup
         (content, referer, osurl, titleurl, pagestatus) = request(url)
 
         for eachline in content.split("\n"):
@@ -1479,7 +1856,7 @@ def telegram(): # testuser = kevinrose
             # pagestatus = '404 fail'
         # fullname = titleurl
         print(url, titleurl) 
-        write_ossint(user, '70 - telegram', fullname, url, '', user, '', '', '', ''
+        write_ossint(user, '9 - telegram', fullname, url, '', user, '', '', '', ''
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
 
 
@@ -1489,11 +1866,14 @@ def tiktok(): # testuser = kevinrose
     for user in users:    
         (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', 'research', '')
         user = user.rstrip()
-        url = ('http://tiktok.com/@%s?' %(user))
-        if 't find this account' in content:
-            pagestatus = '404 fail'
-        fullname = titleurl
-        print(url, titleurl) 
+        url = ('https://tiktok.com/@%s?' %(user))
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # for eachline in content.split("\n"):
+            # if 't find this account' in content:
+                # pagestatus = '404 fail'
+                
+        # fullname = titleurl
+        # print(url, titleurl) 
         write_ossint(user, '7 - tiktok', fullname, url, '', user, '', '', '', ''
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
 
@@ -1535,7 +1915,7 @@ def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDon
         user = user.rstrip()
         url = ('https://truthsocial.com/@%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
-
+        # print('trying %s' %(url))   # temp
         pagestatus = ''
         for eachline in content.split("  <"):
             if 'This resource could not be found' in eachline:
@@ -1543,7 +1923,8 @@ def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDon
             elif "og:title" in eachline:
                 titleurl = eachline.strip().split("\"")[1]
                 fullname = titleurl.split(" (")[0]
-                
+                pagestatus = '200'
+                ranking = '9 - truthsocial.com'
                 if titleurl == 'Truth Social':
                     pagestatus = '404'
                 else:
@@ -1552,8 +1933,8 @@ def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDon
                 # print(fullname) # temp
             elif "og:description" in eachline:
                 note = eachline.strip().split("\"")[1]
- 
-        if '200' in pagestatus: 
+        if 1==1:
+        # if '200' in pagestatus: 
         # if '404' not in pagestatus:
             print(url, fullname) 
             write_ossint(user, ranking, fullname, url, '', user, '', '', '', ''
@@ -1608,7 +1989,8 @@ def validnumber():# testPhone= 708-372-8101
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
         phone = phone.replace('(','').replace(')','').replace(' ','')
         # print('phone = >%s<' %(phone))     #temp   
-        url = ('https://validnumber.com/phone-number/%s/' %(phone))
+        url = ('https://validnumber.com/phone-number/%s/' %(phone.replace("-", "")))
+        
         (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
 
         for eachline in content.split("\n"):
@@ -1631,29 +2013,39 @@ def validnumber():# testPhone= 708-372-8101
 
 
 
-def venmo(): # testuser = kevinrose https://account.venmo.com/u/kevinrose
+def venmo(): # testuser = kevinrose
 
     print('\n\t<<<<< Checking venmo against a list of users >>>>>')
     for user in users:    
         (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
         (photo, country, website, email, language, username) = ('','','','','','')
-        (city) = ('')
+        (city, content) = ('', '')
+        (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
         user = user.rstrip()
-        # url = ('http://venmo.com/%s' %(user))
-        url = ('https://venmo.com/u/%s' %(user))
+        url = ('https://account.venmo.com/u/%s' %(user))
 
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         
-        try:
-            (content, referer, osurl, titleurl, pagestatus) = request(url)
-        except:
-            pass
-        if 'Do you want to register' not in content:
+        # try:
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # except:
+            # pass
+        # if 1==1:    
+        if 'Sign in to pay this person' in content:
+        # if 'the page you requested does not exist' not in content:
+            print('bobs your uncle')    # temp
             fullname = titleurl
             fullname = fullname.split(" (")[0]
             print(url, fullname) 
+            write_ossint(user, '3 - venmo', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+
+        elif 'the page you requested does not exist' not in content:
             write_ossint(user, '9 - venmo', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+
+
+
 
 def whatismyip():    # testuser= 77.15.67.232  
     print('\n\t<<<<< Checking whatismyipaddress.com against a list of IPs >>>>>')
@@ -1696,12 +2088,44 @@ def whitepagesphone():# testuser=    210-316-9435
     for phone in phones:    
         (country, city, zip) = ('', '', '')
         (titleurl) = ('')
-        url = ('http://www.whitepages.com/search/ReversePhone?full_phone=%s' %(phone))
+        # url = ('http://www.whitepages.com/search/ReversePhone?full_phone=%s' %(phone))
+        url = ('https://www.whitepages.com/phone/1-%s' %(phone))
+
         # (content, referer, osurl, titleurl, pagestatus) = request(url)    # access denied cloudflare
 
         write_ossint(phone, '7 - whitepages', '', url, '', '', phone, '', '', ''
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')
     
+def whocalld():# testPhone= 708-372-8101
+    print(y + '\n\t<<<<< Checking whocalld against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
+    # https://whocalld.com/+17083728101
+    for phone in phones:
+        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+        (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
+        phone = phone.replace('(','').replace(')','').replace(' ','')
+        # print('phone = >%s<' %(phone))     #temp   
+        url = ('https://whocalld.com/+1%s' %(phone.replace("-", "")))
+        
+        (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
+
+        for eachline in content.split("\n"):
+            if "Not found" in eachline and case == '':
+                print("Not found")  # temp
+                url = ('')
+            elif "This seems to be" in eachline:
+                if ' in ' in eachline:
+                    note = eachline.replace(". </p>",'').replace("<p>",'').strip().replace("This",phone)
+                    city = eachline.split(" in ")[1].replace(". </p>",'').replace("<p>",'').strip()
+                    if ", " in city:
+                        state = city.split(", ")[1].replace(".",'')
+                        city = city.split(", ")[0]
+                    note = ("According to %s %s" %(url, note))
+        pagestatus = ''        
+                
+        if url != '':
+            print(url) 
+            write_ossint(phone, '4 - whocalld', '', url, '', '', phone, '', '', ''
+                , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
     from subprocess import call, Popen, PIPE
@@ -1848,21 +2272,27 @@ def wordpress(): # testuser = kevinrose
     for user in users:    
         (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
         (photo, country, website, email, language, username) = ('','','','','','')
-        (city) = ('')
+        (city, note) = ('', '')
         user = user.rstrip()
-        url = ('http://%s.wordspress.com' %(user))
+        url = ('https://wordpress.org/support/users/%s/' %(user))
+        note = ('https://%s.wordspress.com' %(user))        
+        
+        
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         
         try:
             (content, referer, osurl, titleurl, pagestatus) = request(url)
-        except:
-            pass
-        if 'Do you want to register' not in content:
+        except socket.error as ex:
+            print(ex)
+        # except:
+            # pass
+        if 'That page can' not in content:
+        # if 'Do you want to register' not in content:
             fullname = titleurl
             fullname = fullname.split(" (")[0]
             print(url, fullname) 
             write_ossint(user, '4 - wordpress', fullname, url, '', user, '', '', '', ''
-                , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
 
 def wordpressprofiles(): # testuser = kevinrose
 
@@ -1872,7 +2302,7 @@ def wordpressprofiles(): # testuser = kevinrose
         (photo, country, website, email, language, username) = ('','','','','','')
         (city) = ('')
         user = user.rstrip()
-        url = ('http://profiles.wordpress.org/%s/' %(user))
+        url = ('https://profiles.wordpress.org/%s/' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         
         try:
@@ -1987,7 +2417,7 @@ def youtube(): # testuser = kevinrose
     for user in users:    
         (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
         user = user.rstrip()
-        url = ('http://www.youtube.com/%s' %(user))
+        url = ('https://www.youtube.com/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         titleurl = titleurl.replace(' - YouTube','')
         if '404' not in pagestatus:
@@ -2056,6 +2486,8 @@ https://www.fiverr.com/samanvay
 https://www.flickr.com/photos/kevinrose
 https://www.kongregate.com/accounts/kevinrose
 https://www.patreon.com/kevinrose/creators
+https://www.patreon.com/kevinrose
+
 https://www.tripadvisor.com/Profile/kevinrose
 https://tinder.com/@john
 
