@@ -46,7 +46,7 @@ from tkinter import messagebox
 author = 'LincolnLandForensics'
 description = "OSING: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.7.8'
+version = '2.7.9'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -91,7 +91,19 @@ else:
     y = '\033[33m'  # yellow
     g = '\033[32m'  # green
     b = '\033[34m'  # blue
-    
+
+# Store bash color values
+CRED = '\033[91m'  # red
+CORNG = '\033[33m' # orange
+CYEL = '\033[93m'  # yellow
+CGRN = '\033[32m'  # green
+CBHL = '\033[34m'  # blue
+CVLT = '\033[35m'  # violet
+CEND = '\033[0m'   # reset
+
+print(CRED + '~~~red~~~ ' + CEND)
+
+   
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Menu           >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 def main():
@@ -100,8 +112,10 @@ def main():
     status = internet()
     if status == False:
         noInternetMsg()
-        print('\nCONNECT TO THE INTERNET FIRST\n')
+        print(CRED + '\nCONNECT TO THE INTERNET FIRST\n' + CEND)
         exit()
+    else:
+        print(CGRN + '\nINTERNET IS CONNECTED\n' + CEND)
 
     # global section
     global filename
@@ -163,7 +177,7 @@ def main():
 
     if args.emailmodules:  
         # BingEmail()    # alpha
-        emailrep() #alpha
+        # emailrep() #alpha "too many requests"
         # facebookemail()    # alpha
         # flickremail()    # alpha  add scraper Invalid API Key
         ghunt()
@@ -171,7 +185,7 @@ def main():
         holehe_email()
         # lifestreamemail()# alpha
         # linkedinemail()    # alpha stopped working
-        myspaceemail()    # add info, scrape url
+        myspaceemail()    # add info, scrape url, #ssl error
         # naymzemail()    # beta
         # nikeplusemail()    # need login
         # piplemail()# add info    (takes 90 seconds per email)
@@ -200,17 +214,16 @@ def main():
         validnumber()    #beta
         whitepagesphone()
         whocalld()
-        reversephonecheck()
         
     if args.test:  
-        venmo() # must manually verify 
+        reversephonecheck() # must manually verify 
         
     if args.usersmodules:  
 
         # about()   # alpha
         # badoo()   # beta add info
         # bebo()    # down for upgrade
-        bitbucket() # add fullname will blow error if no internet
+        bitbucket() # add fullname
         # bitcoinforum() # alpha # https://bitcoinforum.com/profile/alex
         # blackplanet()    
         blogspot()  # works
@@ -219,7 +232,7 @@ def main():
         # deviantart()    
         # digg()# beta
         disqus()
-        ebay()  # works
+        # ebay()  # all false positives due to captcha
         # etsy()    # https://www.etsy.com/people/kevinrose
         facebook()  # works
         # ffffound()# beta add inf
@@ -252,17 +265,17 @@ def main():
         # LiveJournal()# add info    
         # mapmywalk()# add info
         # mapmytracks() # always 404
-        mastadon()
+        # mastadon()    too many false positives
         # mobypicture()    # add info
         # MyLife()    # add info
         #       # https://john.myshopify.com/
-        myspace()# add info
+        # myspace()# add info SSL errror, always gives you a url
         # netlog()
         # okcupid()# add info
         # pastebin()# add info https://pastebin.com/u/test
         # pandora() # add info
-        parler()
-        paypal()
+        # parler()    # down
+        # paypal()  # needs work
         patreon() # alpha  https://www.patreon.com/kevinrose/creators
         # peepmail()# alpha
         # photobucket()   https://app.photobucket.com/u/kevinrose 
@@ -283,11 +296,11 @@ def main():
         # tagged()# add info
         # technorati()# add info
         # telegram()    # alpha always a 200
-        tiktok()    # todo
+        # tiktok()    # todo
         #       # todo https://tinder.com/@john
         # thingiverse()# add info    
         # topsy()# alpha add info
-        truthSocial()
+        # truthSocial() # mostly false positives
         #   # alpha https://www.tripadvisor.com/Profile/kevinrose
         # tumblr() https://test.tumblr.com/   
         # twitter()   # fails
@@ -500,8 +513,36 @@ def about(): # testuser = kevinrose
             write_ossint(user, '3 - about.me', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', titleurl, pagestatus)        
 
+def fastpeoplesearch():# testPhone= 385-347-1531
+    print(y + '\n\t<<<<< Checking fastpeoplesearch against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
+    
+    for phone in phones:
+        (country, city, zip, case, note, content) = ('', '', '', '', '', '')
+        (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', 'research')
+        phone = phone.replace('(','').replace(')','-').replace(' ','')
+        # print('phone = >%s<' %(phone))     #temp   
+        url = ('https://www.fastpeoplesearch.com/%s' %(phone))
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
 
-def fouroneone():# testPhone= 708-372-8101  view-source:https://www.411.com/phone/1-417-967-2020
+        for eachline in content.split("\n"):
+            if "We could not find any results based on your search criteria" in eachline and case == '':
+                print(r, "not found", o)  # temp
+                url = ('')
+            # elif "FastPeopleSearch for " in eachline:
+                
+                # fullname = eachline.split("FastPeopleSearch for ")[1]
+                # print('fullname', fullname) # temp
+                # note = eachline
+        # pagestatus = ''        
+                
+        if url != '':
+        # if ('%') not in url: 
+            print(url) 
+            write_ossint(phone, '9 - fastpeoplesearch', fullname, url, '', '', phone, '', '', ''
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
+
+
+def fouroneone():# testPhone= 385-347-1531
     print(y + '\n\t<<<<< Checking 411 against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     
     for phone in phones:
@@ -688,8 +729,8 @@ def ebay(): # testuser = kevinrose
         if 'The User ID you entered was not found' not in content:
             fullname = titleurl
             print(url, titleurl) 
-            write_ossint(user, '5 - ebay', fullname, url, '', user, '', '', '', ''
-                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
+            write_ossint(user, '9 - ebay', fullname, url, '', user, '', '', '', ''
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', pagestatus)        
 
 def emailrep():# testEmail= smooth8101@yahoo.com   
     print(y + '\n\t<<<<< Checking emailrep against a list of ' + b + 'emails' + y + ' >>>>>' + o)
@@ -744,10 +785,10 @@ def facebook(): # testuser = kevinrose
         except:
             pass
 
-        if 'Success' in pagestatus:
+        if 'Success' in pagestatus and 'vi-vn.facebook.com' in content:
             fullname = titleurl
             print(url, fullname) 
-            write_ossint(user, '4 - Facebook', fullname, url, '', user, '', '', '', ''
+            write_ossint(user, '3 - Facebook', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
 
 def flickr(): # testuser = kevinrose
@@ -764,7 +805,7 @@ def flickr(): # testuser = kevinrose
         for eachline in content.split("  <"):
             if "og:title" in eachline:
                 fullname = eachline.strip().split("\"")[1]
-                print(fullname) # temp
+
             # elif "My sites:" in eachline:
                 # eachline = eachline.replace('\n',' ')
                 # note = eachline.strip()
@@ -849,12 +890,13 @@ def geoiptool():    # testuser= 77.15.67.232
 
 def ghunt():# testEmail= kevinrose@gmail.com   
     for email in emails:
-        note = ('cd C:\Forensics\scripts\python\git-repo\GHunt && ghunt email %s' %(email)) 
+        (note, url) = ('', '')
+        url = ('cd C:\Forensics\scripts\python\git-repo\GHunt && ghunt email %s' %(email)) 
         if email.endswith('gmail.com'):
             ranking = ('2 - ghunt')
         else:
             ranking = ('9 - ghunt')  
-        write_ossint(note, ranking, '', '', email, '', '', '', '', ''
+        write_ossint(note, ranking, '', url, email, '', '', '', '', ''
         , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'research')
 
 
@@ -908,22 +950,28 @@ def instagram():    # testuser=    kevinrose     # add info
     print('\n\t<<<<< Checking instagram against a list of users >>>>>')
     for user in users:    
         url = ('https://instagram.com/%s/' %(user))
-        (content, referer, osurl, titleurl, pagestatus) = ('','','','','fail')
-        # try:
-            # (content, referer, osurl, titleurl, pagestatus) = request(url)
-            # content = content.strip()
-            # titleurl = titleurl.strip()
-            # for eachline in content.split("\n"):
-                # if "@context" in eachline:
-                    # content = eachline.strip()
-            # if "Fail" in pagestatus:
-                # pagestatus = 'fail'
-        # except:
-            # pass
-        # time.sleep(3) # will sleep for 3 seconds
-        write_ossint(user, '6 - instagram.com friends: grab info', '', url, '', user, '', '', '', ''
-            , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)
-        print(g + url + content + o)    
+        (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
+        (fullname) = ('')
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
+            content = content.strip()
+            titleurl = titleurl.strip()
+            for eachline in content.split("\n"):
+                if "@context" in eachline:
+                    content = eachline.strip()
+                elif 'og:title' in eachline and 'content=\"' in eachline:
+                    fullname = eachline.split('\"')[1].split(' (')[0]
+
+        except:
+            pass
+            
+        # time.sleep(1) # will sleep for 1 seconds
+        if 'alternate' in content:
+            
+        
+            write_ossint(user, '4 - instagram.com', fullname, url, '', user, '', '', '', ''
+                , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
+            print(g + url + o)    
 
  
 def instagramtwo(): #alpha
@@ -1063,6 +1111,7 @@ def kik(): # testuser = kevinrose
             elif "displayPic\"" in eachline:
                 photo = eachline.strip().split(":\"")[1].replace("\\","")
             fullname = ('%s %s' %(firstname,lastname))
+            fullname = fullname.replace("\"}","")
         if '404' not in pagestatus:
             print("%s = %s" %(url, fullname)) # temp
             write_ossint(user, '4 - kik', fullname, url, '', user, '', '', '', ''
@@ -1182,9 +1231,13 @@ def myspaceemail():# testEmail= kandyem@yahoo.com   267619602
     
     for email in emails:
         (fullname, country, city, zip, case) = ('', '', '', '', '')
-        
+        (content, referer, osurl, titleurl, pagestatus) = ('', '', '', '', '')
         url = ('http://www.myspace.com/search/people?q=%s&ac=t' %(email))
-        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
+        except:
+            pass        
 
         for eachline in content.split("\n"):
             if "data-id" in eachline and case == '':
@@ -1197,9 +1250,9 @@ def myspaceemail():# testEmail= kandyem@yahoo.com   267619602
 
 
 
-        if ('%') not in url: 
+        if ('%') not in url and ('Your search did not return any results') not in content: 
             print(url, email) 
-            write_ossint(email, '5 - myspace.com', fullname, url, email, '', '', '', '', ''
+            write_ossint(email, '9 - myspace.com', fullname, url, email, '', '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 def parler(): # testuser = kevinrose
@@ -1315,7 +1368,7 @@ def pinterest():    # testuser=    kevinrose     # add city
     for user in users:    
         (country, email, fullname,lastname,firstname) = ('', '', '','','')
         (success, note, photo, website, city, otherurls) = ('','','','','', '')
-        (content) = ('')
+        (content, referer, osurl, titleurl, pagestatus) = ('', '', '','','')
         url = ('https://www.pinterest.com/%s/' %(user))
         try:
             (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -1342,9 +1395,9 @@ def pinterest():    # testuser=    kevinrose     # add city
                     # elif "title\>" in eachline and "\(" in eachline:
                         # fullname = eachline # temp
                         # print("blah" , fullname) # temp
-            if note != 'true':
+            if note != '':
                 write_ossint(user, '4 - pinterest', fullname, url, '', user, '', '', email, ''
-                    , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')            
+                    , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)            
                 print(g + url + y + '\t', fullname , note, o)
                 
                 
@@ -1633,9 +1686,9 @@ def resolverRS():# testIP= 77.15.67.232
 def reversephonecheck():# testPhone= 708-372-8101
     print(y + '\n\t<<<<< Checking reversephonecheck against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     for phone in phones:
-        (country, city, zip, case, note) = ('', '', '', '', '')
+        (fulladdress, country, city, zip, case, note) = ('', '', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
-        (areacode, prefix, line) = ('', '', '')
+        (areacode, prefix, line, count, match, match2) = ('', '', '', 1, '', '')
         phone = phone.replace('(','').replace(')','').replace(' ','')
         
         # print('phone = >%s<' %(phone))     #temp   
@@ -1656,16 +1709,29 @@ def reversephonecheck():# testPhone= 708-372-8101
         
         (content, referer, osurl, titleurl, pagestatus) = request(url) 
         match = ("%s - %s" %(prefix, line2))
-        print('match = %s' %(match))    # temp
+        # match2 = match.replace(' - ','')
+        # match2 = ('%s%s' %(areacode, match2))
+        
+        # print('match2 = ', match2)  # temp
+        # print('match = %s' %(match))    # temp
         for eachline in content.split("\n"):
             if match in eachline:
+
                 pagestatus = 'research'
-                print(eachline)
-        if pagestatus == 'research':
+                # print('eachline = %s' %(eachline))
+                count += 1
+            # if match2 in eachline and 'ownersAddresses' in eachline:
+                # note = ('%s %s' %(note, eachline))
+                # print(note) # temp
+                # fulladdress = eachline.split('owner:i,address:[\"')[0]   # ownersAddresses
+                # fulladdress = eachline.split('ownersAddresses')[1]   # ownersAddresses
+
+
+        if pagestatus == 'research' and count == 2:
  
             print(url) 
-            write_ossint(phone, '2 - reversephonecheck', '', url, '', '', phone, '', '', ''
-                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
+            write_ossint(phone, '3 - reversephonecheck', '', url, '', '', phone, '', '', fulladdress
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
 
 def samples():
@@ -1714,7 +1780,7 @@ tin_max87@yahoo.com
 92.20.236.78
 
     Sample phone
-708-372-8101
+385-347-1531
 '''
 )    
 
@@ -1724,14 +1790,25 @@ def snapchat(): # testuser = kevinrose
     for user in users:    
         (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', 'research', '')
         user = user.rstrip()
-        url = ('https://www.snapchat.com/add/@%s?' %(user))
-        # (content, referer, osurl, titleurl, pagestatus) = request(url)
-        if 'This content was not found' in content:
-            pagestatus = '404 fail'
-        # fullname = titleurl
-        print(url, titleurl, content) 
-        write_ossint(user, '8 - snapchat', fullname, url, '', user, '', '', '', ''
-            , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
+        url = ('https://www.snapchat.com/add/%s?' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        for eachline in content.split("\n"):
+
+            if "og:title" in eachline:
+                fullname = eachline.strip().split("\"")[1].replace(' on Snapchat','')
+
+
+        if 'name=\"description' in content:
+            write_ossint(user, '6 - snapchat', fullname, url, '', user, '', '', '', ''
+            , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)        
+            print(url)        
+
+        # elif 'name=\"description' in content and 'Please provide your Snapchat username if you have one' in content:
+            # write_ossint(user, '8 - snapchat', fullname, url, '', user, '', '', '', ''
+            # , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
+            # print(url)        
+
 
 
 def spotify(): # testuser = kevinrose
@@ -2008,7 +2085,7 @@ def validnumber():# testPhone= 708-372-8101
         if url != '':
         # if ('%') not in url: 
             print(url) 
-            write_ossint(phone, '3 - validnumber', '', url, '', '', phone, '', '', ''
+            write_ossint(phone, '9 - validnumber', '', url, '', '', phone, '', '', ''
                 , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 
