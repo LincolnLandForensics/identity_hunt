@@ -24,37 +24,60 @@ insert emails, phone numbers, usernames into input.txt
 
 Usage:
 
+default behavior, if you enter no options it just runs with -E -i -p -U -W selected
+```
+identity_hunt.py
+or
+double click identity_hunt.exe
+```
+
 help
 ```
-identity_hunt.py -H
+identity_hunt.exe -H
+or
+python identity_hunt.py -H
 ```
 emails
 ```
-identity_hunt.py -E
+identity_hunt.exe -E
+or
+python identity_hunt.py -E
 ```
 ip's only
 ```
-identity_hunt.py -i
+identity_hunt.exe -i
+or
+python identity_hunt.py -i
 ```
 print sample info for your input.txt (ex. kevinrose)
 ```
-identity_hunt.py -s
+identity_hunt.exe -s
+or
+python identity_hunt.py -s
 ```
 phone numbers only
 ```
-identity_hunt.py -p
+identity_hunt.exe -p
+or
+python identity_hunt.py -p
 ```
 users only
 ```
-identity_hunt.py -U
+identity_hunt.exe -U
+or
+python identity_hunt.py -U
 ```
 websites only
 ```
-identity_hunt.py -W
+identity_hunt.exe -W
+or
+python identity_hunt.py -W
 ```
 you can add mixed input types at once.
 ```
-identity_hunt.py -E -i -p -U
+identity_hunt.exe -E -i -p -U -W
+or
+python identity_hunt.py -E -i -p -U -W
 ```
 
 

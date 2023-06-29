@@ -46,7 +46,7 @@ from tkinter import messagebox
 author = 'LincolnLandForensics'
 description = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.8.4'
+version = '2.8.5'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -176,6 +176,17 @@ def main():
 
     create_ossint_xlsx()    # create the spreadsheet    
     master()   # re-print(original input list as 1-master and separate emails, ips, phones & users
+
+
+    # Check if no arguments are entered
+    if len(sys.argv) == 1:
+        print('You didnt select any options so Ill run the major options')
+        print('try -h for a listing of all menu options')
+        args.emailmodules = True
+        args.ips = True
+        args.phonestuff = True
+        args.usersmodules = True
+        args.websites = True
     
     if args.howto:  # this section might be redundant
         parser.print_help()
@@ -294,7 +305,10 @@ def main():
         call(["chown %s.%s *.xlsx" % (tech.lower(), tech.lower())], shell=True)
 
     workbook.close()
+    input(f"See '{Spreadsheet}' for output. Hit Enter to exit...")
+   
     return 0
+    
     # exit()  # this code is unreachable
 
 
@@ -310,7 +324,13 @@ def master():
     style = workbook.add_format()
     color = 'white'
 
-    inputfile = open(filename)
+    if os.path.getsize(filename) == 0:
+        sys.exit(f"'{filename}' is empty. fill it with username, email, ip, phone and websites.")
+    elif os.path.isfile(filename):
+        inputfile = open(filename)
+    else:
+        sys.exit(f"'{filename}' does not exist.")
+
     for eachline in inputfile:
         
         (query, ranking, fullname, url, email , user) = ('', '', '', '', '', '')
@@ -463,7 +483,7 @@ def master():
             dnsdomain, dstip, srcip, content, referer, osurl,
             titleurl, pagestatus)
     return users,ips,emails,phones
-    # return USERS,IPS,EMAILS        
+
 
 def about(): # testuser = kevinrose
 
@@ -3164,6 +3184,7 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<< Revision History >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+2.8.6 - made the .py and .exe version dummy proof. Just double click and it runs
 2.7.6 - internet checker, removed -I and -O requirement
 2.8.0 - kik
 """
@@ -3173,8 +3194,8 @@ if __name__ == '__main__':
 """
 fix dnsdomains if it ends with / , take it off
 tkinter purely gui interface
-exe version
 
+fix telegram with bad input
 instagramtwo()
 create a new identity_hunt with xlsx and requests instead of urllib2
 
