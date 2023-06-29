@@ -3,7 +3,7 @@ OSINT: track people down by username, email, ip, phone and website.
 
 ## installation:
 
-pip install -r requirements.txt
+pip install -r requirements_identity_hunt.txt
 
 ## directions:
 insert emails, phone numbers, usernames into input.txt

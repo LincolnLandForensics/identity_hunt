@@ -44,9 +44,9 @@ from tkinter import messagebox
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 author = 'LincolnLandForensics'
-description = "OSING: track people down by username, email, ip, phone and website"
+description = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.8.3'
+version = '2.8.4'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -80,6 +80,11 @@ regex_ipv6 = re.compile('(S*([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}S*|S*(' +
                         '0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))')
 
 regex_phone = re.compile('(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$')
+regex_phone11 = re.compile(r'^1\d{10}$')
+regex_phone2 = re.compile(r'(\d{3}) \W* (\d{3}) \W* (\d{4}) \W* (\d*)$')
+
+
+
 
 # Color options
 if sys.platform == 'win32' or sys.platform == 'win64':
@@ -153,6 +158,8 @@ def main():
     parser.add_argument('-s','--samples', help='print sample inputs', required=False, action='store_true')
     parser.add_argument('-t','--test', help='testing individual modules', required=False, action='store_true')
     parser.add_argument('-U','--usersmodules', help='username modules', required=False, action='store_true')
+    parser.add_argument('-w','--websitetitle', help='websites titles', required=False, action='store_true')    
+
     parser.add_argument('-W','--websites', help='websites modules', required=False, action='store_true')    
     
     args = parser.parse_args()
@@ -189,6 +196,7 @@ def main():
         # myspaceemail()    # all false postives
         # naymzemail()    # beta
         # nikeplusemail()    # need login
+        osintIndustries_email()
         # piplemail()# add info    (takes 90 seconds per email)
         # spokeo()    # needs work    (timeout error)
         # stumbluponemail()# alpha need login
@@ -209,7 +217,7 @@ def main():
     # phone modules
     if args.phonestuff:
         thatsthemphone()
-        fouroneone()   # https://www.411.com/phone/1-417-967-2020
+        # fouroneone()   # https://www.411.com/phone/1-417-967-2020
         # phonecarrier()  #beta
         reversephonecheck()
         spydialer()
@@ -218,7 +226,7 @@ def main():
         whocalld()
         
     if args.test:  
-        facebook()
+        whocalld()
 
     if args.usersmodules:  
         about()
@@ -240,10 +248,10 @@ def main():
         # keybase()   # pre-alpha
         # kickstarter() # access denied    
         kik()   
-        linkedin()  # needs auth
+        # linkedin()  # needs auth
         # mapmytracks() # always 404
         massageanywhere()   # alpha
-        mastadon()    
+        # mastadon() # task    
         myshopify()
         myspace_users()
         paypal()  # needs work
@@ -253,7 +261,7 @@ def main():
         public()    
         snapchat()    # must manually verify
         spotify()   # works
-        telegram() 
+        # telegram() # task
         tiktok()
         tinder() # add dob, schools
         truthSocial() 
@@ -268,6 +276,9 @@ def main():
         sherlock()
         whatsmyname()
 
+    if args.websitetitle:  
+        titles()    # alpha
+        
     if args.websites:  
         # Bing()# alpha
         redirect_detect()
@@ -304,6 +315,7 @@ def master():
         
         (query, ranking, fullname, url, email , user) = ('', '', '', '', '', '')
         (phone, ip, entity, fulladdress, city, state) = ('', '', '', '', '', '')
+        # (ipv6) = ('')
         (zip, country, note, aka, dob, gender) = ('', '', '', '', '', '')
         (info, misc, lastname, firstname, middlename, friend) = ('', '', '', '', '', '')
         (otherurls, otherphones, otheremails, case, sosfilenumber, president) = ('', '', '', '', '', '')
@@ -390,7 +402,13 @@ def master():
             (ip) = (query)
             if query.lower() not in ips:            # don't add duplicates
                 ips.append(ip)
-        elif re.search(regex_phone, query):  # regex_phone
+
+        elif re.search(regex_ipv6, query):  # regex_ipv6
+            (ip) = (query)
+            if query.lower() not in ips:            # don't add duplicates
+                ips.append(ip)
+
+        elif re.search(regex_phone, query) or re.search(regex_phone11, query) or re.search(regex_phone2, query):  # regex_phone
             (phone) = (query)
             if query.lower() not in phones:            # don't add duplicates
                 phones.append(phone)
@@ -1274,8 +1292,8 @@ def linkedin():    # testuser=    kevinrose     # grab info
         try:
             (content, referer, osurl, titleurl, pagestatus) = request(url)
         except:pass
-        if 1==1:
-        # if " LinkedIn" in titleurl:
+        # if 1==1:
+        if " LinkedIn" in titleurl:
             titleUrl = titleurl.replace("  | LinkedIn","")
             if titleurl.lower() != user.lower():
                 fullname = titleurl
@@ -1461,6 +1479,14 @@ def myspaceemail():# testEmail= kandyem@yahoo.com   267619602
             write_ossint(email, '9 - myspace.com', fullname, url, email, '', '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'test', '', '', content, '', '', pagestatus)
 
+def osintIndustries_email():
+
+    print('\n\t<<<<< osint.Industries entry >>>>>')
+    url = ('https://osint.industries/email#')
+    write_ossint('', '9 - manual', '', url, '', '', '', '', '', ''
+                , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+    
+    
 def patreon(): # testuser = kevinrose
 
     print('\n\t<<<<< Checking patreon against a list of users >>>>>')
@@ -2002,15 +2028,27 @@ def resolverRS():# testIP= 77.15.67.232
         if url != '':
             print(url, ip) 
             write_ossint(ip, '6 - resolve.rs', '', url, '', '', '', ip, '', ''
-                , city, state, zip, country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, referer, '', titleurl, pagestatus)
+                , city, state, zip, country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 def reversephonecheck():# testPhone= 708-372-8101
     print(y + '\n\t<<<<< Checking reversephonecheck against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     for phone in phones:
+        (query) = (phone)
         (fulladdress, country, city, zip, case, note) = ('', '', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
         (areacode, prefix, line, count, match, match2) = ('', '', '', 1, '', '')
-        phone = phone.replace('(','').replace(')','').replace(' ','')
+        phone = phone.replace('(','').replace(')','-').replace(' ','')
+        print(phone)
+        if phone.startswith('1-'):
+            phone =phone.replace('1-','')
+        elif phone.startswith('1'):
+            phone =phone.lstrip('1')
+
+        if len(phone) != 10:
+            return "Invalid phone number"
+        elif '-' not in phone:
+            phone = (phone[:3] + "-" + phone[3:6] + "-" + phone[6:])
+            
         (line2) = ('')
         # print('phone = >%s<' %(phone))     #temp   
         if "-" in phone:
@@ -2025,11 +2063,6 @@ def reversephonecheck():# testPhone= 708-372-8101
             except:
                 pass
         url = ('https://www.reversephonecheck.com/1-%s/%s/%s/#%s' %(areacode, prefix, line, phone.replace('-', ''))) 
-        
-        
-        
-        
-        
 
         (content, referer, osurl, titleurl, pagestatus) = request(url) 
         match = ("%s - %s" %(prefix, line2))
@@ -2050,12 +2083,14 @@ def reversephonecheck():# testPhone= 708-372-8101
                 # fulladdress = eachline.split('owner:i,address:[\"')[0]   # ownersAddresses
                 # fulladdress = eachline.split('ownersAddresses')[1]   # ownersAddresses
 
-
         if pagestatus == 'research' and count == 2:
             print(url) 
-            write_ossint(phone, '3 - reversephonecheck', '', url, '', '', phone, '', '', fulladdress
+            write_ossint(query, '3 - reversephonecheck', '', url, '', '', phone, '', '', fulladdress
                 , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
-
+        else:
+            write_ossint(query, '9 - reversephonecheck', '', url, '', '', phone, '', '', fulladdress
+                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
+        
 
 def robtex():
     print(y, '\n\t<<<<< robtex dns lookup >>>>>'    , o)    
@@ -2188,6 +2223,8 @@ def spotify(): # testuser = kevinrose
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)        
 
 def spydialer():# testPhone= 708-372-8101
+    print('\n\t<<<<< Checking spydialer against a list of users >>>>>')
+
     for phone in phones:
         (country, city, zip, case, note) = ('', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
@@ -2233,15 +2270,16 @@ def thatsthemip():# testIP= 8.8.8.8
         (content, referer, osurl, titleurl, pagestatus) = request(url)
 
         for eachline in content.split("\n"):
-            if "403 ERROR" in eachline:
+            if "located in " in eachline:
+                state = eachline
+                note = eachline
+
+            elif "403 ERROR" in eachline:
                 pagestatus = '403 Error'
                 content = ''
             elif "Found 0 results for your query" in eachline:
                 print("not found")  # temp
                 url = ('')
-            elif "located in " in eachline:
-                state = eachline
-                note = eachline
         # pagestatus = ''                
         if url != '':
             print(url, ip) 
@@ -2396,7 +2434,7 @@ def titles():    # testsite= google.com
         # ip
         ip = ip_address(dnsdomain)
         
-        print(y, website , pagestatus,  o)
+        print(y, website , pagestatus,  g, titleurl, o)
         write_ossint(url, '7 - website ', '', url, '', '', '', ip, '', ''
             , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', dnsdomain, '', '', '', referer, osurl, titleurl, pagestatus)
 
@@ -2508,43 +2546,58 @@ def twitteremail(): # test Email=     craig@craigslist.org
     for email in emails:
         url = ('https://twitter.com/users/email_available?email=%s' %(email))
         (country, city, zip) = ('', '', '')        
-        (content, referer, osurl, titleurl, pagestatus) = request(url)    # access denied cloudflare
-
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)    # access denied cloudflare
+        except socket.error as ex:
+            print(ex)        
         if 'Email has already been taken' in content:
             write_ossint(email, '5 - twitter.com', '', url, email, '', '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', '', '')
             print(g + email + o)
 
-def validnumber():# testPhone= 708-372-8101
+def validnumber():# testPhone= 7083703020
     print(y + '\n\t<<<<< Checking validnumber against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     # https://validnumber.com/phone-number/3124377966/
     for phone in phones:
-        (country, city, zip, case, note) = ('', '', '', '', '')
+        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
+        (query) = (phone)
         phone = phone.replace('(','').replace(')','').replace(' ','')
+        if phone.startswith('1-'):
+            phone =phone.replace('1-','')
+        elif phone.startswith('1'):
+            phone =phone.lstrip('1')
+        
+        
         # print('phone = >%s<' %(phone))     #temp   
         url = ('https://validnumber.com/phone-number/%s/' %(phone.replace("-", "")))
         
         (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
-
+        pagestatus = ''
         for eachline in content.split("\n"):
             if "No name associated with this number" in eachline and case == '':
                 print("not found")  # temp
                 url = ('')
             elif "Find out who owns" in eachline:
                 if 'This device is registered in ' in eachline:
+                    note = eachline.split('\"')[1]
+                    note = note.split('Free owner details for')[0]
                     city = eachline.split("This device is registered in ")[1].split("Free owner details")[0]
-            # elif "schema.org" in eachline:
-                # print('oooh doggy') # temp
-                # note = eachline
-        pagestatus = ''        
-                
-        if url != '':
-        # if ('%') not in url: 
-            print(url) 
-            write_ossint(phone, '9 - validnumber', '', url, '', '', phone, '', '', ''
-                , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
+                    
+                    state = city.split(',')[1]
+                    city = city.split(',')[0]
 
+            # descpattern = r'<meta name="description" content="(.+?)">'
+            # match = re.search(descpattern, eachline)
+            # if match:
+                # note = match.group(1)
+                # print(match.group(1))
+          
+          
+        if city != '':        
+                print(url) 
+                write_ossint(query, '5 - validnumber', '', url, '', '', phone, '', '', ''
+                    , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, '')
 
 
 def venmo(): # testuser = kevinrose
@@ -2660,16 +2713,20 @@ def whitepagesphone():# testuser=    210-316-9435
 
         # (content, referer, osurl, titleurl, pagestatus) = request(url)    # access denied cloudflare
 
-        write_ossint(phone, '7 - whitepages', '', url, '', '', phone, '', '', ''
+        write_ossint(phone, '9 - whitepages', '', url, '', '', phone, '', '', ''
             , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, '')
     
-def whocalld():# testPhone= 708-372-8101
+def whocalld():# testPhone= 708-372-8101 DROP THE LEADING 1
     print(y + '\n\t<<<<< Checking whocalld against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
     # https://whocalld.com/+17083728101
     for phone in phones:
         (country, city, state, zip, case, note) = ('', '', '', '', '', '')
-        (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
+        (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
         phone = phone.replace('(','').replace(')','').replace(' ','')
+        
+        if phone.startswith('1'):
+            phone = phone.replace('1','')
+        
         # print('phone = >%s<' %(phone))     #temp   
         url = ('https://whocalld.com/+1%s' %(phone.replace("-", "")))
         
@@ -2677,7 +2734,7 @@ def whocalld():# testPhone= 708-372-8101
 
         for eachline in content.split("\n"):
             if "Not found" in eachline and case == '':
-                print("Not found")  # temp
+                # print("%s Not found" %(phone))  # temp
                 url = ('')
             elif "This seems to be" in eachline:
                 if ' in ' in eachline:
@@ -2687,11 +2744,24 @@ def whocalld():# testPhone= 708-372-8101
                         state = city.split(", ")[1].replace(".",'')
                         city = city.split(", ")[0]
                     note = ("According to %s %s" %(url, note))
+            elif "The name of this caller seemed to be " in eachline:
+                note = eachline
+                fullname = eachline.replace("The name of this caller seemed to be ",'').split(",")[0].strip()
+                if ' in ' in eachline:
+                    note = eachline.replace(". </p>",'').replace("<p>",'').strip().replace("This",phone)
+                    city = eachline.split(" in ")[2].replace(". </p>",'').replace("<p>",'').strip()
+                    if ", " in city:
+                        state = city.split(", ")[1].replace(".",'')
+                        city = city.split(", ")[0]
+
+
+
+         
         pagestatus = ''        
                 
         if url != '':
-            print(url) 
-            write_ossint(phone, '4 - whocalld', '', url, '', '', phone, '', '', ''
+            print(url, fullname) 
+            write_ossint(phone, '4 - whocalld', fullname, url, '', '', phone, '', '', ''
                 , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
 def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
