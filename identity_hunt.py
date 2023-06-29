@@ -117,7 +117,8 @@ def main():
     status = internet()
     if status == False:
         noInternetMsg()
-        print(CRED + '\nCONNECT TO THE INTERNET FIRST\n' + CEND)
+        # print(CRED + '\nCONNECT TO THE INTERNET FIRST\n' + CEND)
+        input(f"CONNECT TO THE INTERNET FIRST. Hit Enter to exit...")
         exit()
     else:
         print(CGRN + '\nINTERNET IS CONNECTED\n' + CEND)
