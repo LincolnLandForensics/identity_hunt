@@ -26,9 +26,9 @@ Usage:
 
 default behavior, if you enter no options it just runs with -E -i -p -U -W selected
 ```
-identity_hunt.py
-or
 double click identity_hunt.exe
+or
+python identity_hunt.py (from command prompt) 
 ```
 
 help
