@@ -325,12 +325,14 @@ def master():
     color = 'white'
 
     if os.path.getsize(filename) == 0:
-        sys.exit(f"'{filename}' is empty. fill it with username, email, ip, phone and websites.")
+        input(f"'{filename}' is empty. fill it with username, email, ip, phone and websites.")
+        sys.exit()
     elif os.path.isfile(filename):
         inputfile = open(filename)
     else:
-        sys.exit(f"'{filename}' does not exist.")
-
+        input(f"See '{filename}' does not exist. Hit Enter to exit...")
+        sys.exit()
+        
     for eachline in inputfile:
         
         (query, ranking, fullname, url, email , user) = ('', '', '', '', '', '')
