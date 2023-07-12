@@ -46,7 +46,7 @@ from tkinter import messagebox
 author = 'LincolnLandForensics'
 description = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.8.5'
+version = '2.8.7'
 
 # Regex section
 regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -61,6 +61,7 @@ regex_sha256 = re.compile(r'^([a-fA-F\d]{64})$')  # regex_sha256
 regex_sha512 = re.compile(r'^([a-fA-F\d]{128})$')  # regex_sha512
 
 regex_number = re.compile(r'^(^\d)$')  # regex_number    #Beta
+regex_number_fb = re.compile(r'^\d{9,15}$')  # regex_number    #to match facebook user id
 
 regex_ipv4 = re.compile('(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' +
                         '(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
@@ -82,9 +83,6 @@ regex_ipv6 = re.compile('(S*([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}S*|S*(' +
 regex_phone = re.compile('(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$')
 regex_phone11 = re.compile(r'^1\d{10}$')
 regex_phone2 = re.compile(r'(\d{3}) \W* (\d{3}) \W* (\d{4}) \W* (\d*)$')
-
-
-
 
 # Color options
 if sys.platform == 'win32' or sys.platform == 'win64':
@@ -131,7 +129,6 @@ def main():
     # global inputDetails
     # inputDetails = 'no'
 
-
     global row
     row = 1
 
@@ -176,8 +173,7 @@ def main():
         Spreadsheet = args.output        
 
     create_ossint_xlsx()    # create the spreadsheet    
-    master()   # re-print(original input list as 1-master and separate emails, ips, phones & users
-
+    master()   # re-print(original input list as 1 - main and separate emails, ips, phones & users
 
     # Check if no arguments are entered
     if len(sys.argv) == 1:
@@ -228,6 +224,7 @@ def main():
         
     # phone modules
     if args.phonestuff:
+        familytreephone()
         thatsthemphone()
         # fouroneone()   # https://www.411.com/phone/1-417-967-2020
         # phonecarrier()  #beta
@@ -238,7 +235,7 @@ def main():
         whocalld()
         
     if args.test:  
-        whocalld()
+        threads()
 
     if args.usersmodules:  
         about()
@@ -274,6 +271,7 @@ def main():
         snapchat()    # must manually verify
         spotify()   # works
         # telegram() # task
+        threads()        
         tiktok()
         tinder() # add dob, schools
         truthSocial() 
@@ -307,10 +305,10 @@ def main():
 
     workbook.close()
     input(f"See '{Spreadsheet}' for output. Hit Enter to exit...")
-   
+
     return 0
     
-    # exit()  # this code is unreachable
+    # sys.exit()  # this code is unreachable
 
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<   Sub-Routines   >>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -326,7 +324,7 @@ def master():
     color = 'white'
 
     if os.path.getsize(filename) == 0:
-        input(f"'{filename}' is empty. fill it with username, email, ip, phone and websites.")
+        input(f"'{filename}' is empty. Fill it with username, email, ip, phone and websites.")
         sys.exit()
     elif os.path.isfile(filename):
         inputfile = open(filename)
@@ -355,7 +353,7 @@ def master():
         query = (eachline[0].strip())
         ranking = (eachline[1].strip())
         if ranking == '':
-            ranking = '1-master'
+            ranking = '1 - main'
         fullname = (eachline[2].strip())
         url = (eachline[3].strip())
         email = (eachline[4].strip())
@@ -804,12 +802,53 @@ def facebook(): # testuser = kevinrose
             write_ossint(user, '3 - Facebook', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
 
+    for phone in phones:
+        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+        (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
+        phone = phone.replace('(','').replace(')','').replace(' ','')
+        
+        if re.search(regex_number_fb, phone):
+        # if user == "" and re.search(regex_number_fb, phone):
+
+            # print('user = %s phone = %s' %(user, phone))
+            url = ('https://www.facebook.com/%s' %(phone))
+            
+            # url = ('https://www.facebook.com/profile.php?id=%s' %(phone))
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
+            if 'Success' in pagestatus and 'vi-vn.facebook.com' in content:
+                user = phone
+                phone = ''
+                fullname = titleurl
+
+            if 1==1:  
+                print(url, fullname)
+                write_ossint(phone, '8 - facebook', fullname, url, '', user, '', '', '', ''
+                    , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
+
+
 def familytree(): 
 
     print('\n\t<<<<< familytree entry >>>>>')
     url = ('https://www.familytreenow.com/search/')
     write_ossint('', '9 - manual', '', url, '', '', '', '', '', ''
                 , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+
+def familytreephone():# testPhone= 708-372-8101 DROP THE LEADING 1
+    print(y + '\n\t<<<<< Checking familytree against a list of ' + b + 'phone numbers' + y + ' >>>>>' + o)
+
+    for phone in phones:
+        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+        (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
+        phone = phone.replace('(','').replace(')','').replace(' ','')
+        
+        if phone.startswith('1'):
+            phone = phone.replace('1','')
+        url = ('https://www.familytreenow.com/search/genealogy/results?phoneno=%s' %(phone.replace("-", "")))
+      
+        if 1==1:        
+            write_ossint(phone, '8 - familytree', fullname, url, '', '', phone, '', '', ''
+                , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
+
 
 def flickr(): # testuser = kevinrose
 
@@ -842,7 +881,7 @@ def format_function(bg_color='white'):
 
 
 def foursquare():    # testuser=    john
-    print('\n\t<<<<< Checking instagram against a list of users >>>>>')
+    print('\n\t<<<<< Checking foursquare against a list of users >>>>>')
     for user in users:    
         url = ('https://foursquare.com/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
@@ -1064,6 +1103,7 @@ def instagram():    # testuser=    kevinrose     # add info
     print('\n\t<<<<< Checking instagram against a list of users >>>>>')
     for user in users:    
         url = ('https://instagram.com/%s/' %(user))
+        # https://i.instagram.com/api/v1/users/<profile_id>/info/
         (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
         (fullname, info, note) = ('', '', '')
         try:
@@ -2355,6 +2395,33 @@ def telegram(): # testuser = kevinrose
             write_ossint(user, '7 - telegram', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', content, '', '', titleurl, pagestatus)        
 
+def threads():    # testuser=    kevinrose     # add info
+    print('\n\t<<<<< Checking threads against a list of users >>>>>')
+    for user in users:    
+        url = ('https://www.threads.net/@%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
+        (fullname, info, note) = ('', '', '')
+        try:
+            (content, referer, osurl, titleurl, pagestatus) = request(url)
+ 
+            content = content.strip()
+            titleurl = titleurl.strip()
+            for eachline in content.split("\n"):
+                if "@context" in eachline:
+                    content = eachline.strip()
+                elif 'og:title' in eachline and 'content=\"' in eachline:
+                    fullname = eachline.split('\"')[1].split(' (')[0]
+                elif "og:description" in eachline:
+                    note = eachline.strip()
+                    note = note.replace("\" property=\"og:description\"/>",'').replace("<meta content=\"",'')
+
+        except:
+            pass
+        if 'on Threads' in titleurl:
+
+            write_ossint(user, '3 - threads.com', fullname, url, '', user, '', '', '', ''
+                , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+            print(url)    
 
 def tiktok(): # testuser = kevinrose
 
@@ -3214,6 +3281,7 @@ https://hubpages.com/@kevinrose
 # <<<<<<<<<<<<<<<<<<<<<<<<<<      notes            >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+apparently when running from a VM (and maybe behind a proxy) it says internet isn't connected
 
 ThereIsN0WayTh1sISaRealUser12345131234 gets detected as a phone number
 
