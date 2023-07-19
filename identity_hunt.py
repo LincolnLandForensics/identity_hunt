@@ -1684,7 +1684,7 @@ def plaxoemail():    # testEmail= craig@craigslist.org#
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         if ('Claimed') in content: 
         # if ('Claimed') in str(response): 
-            write_ossint(email, '7 - plaxo.com (email exists)', '', url, '', '', '', '', email, ''
+            write_ossint(email, '7 - plaxo', '', url, '', '', '', '', email, ''
                 , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
 
             print(g + Email + '\t' + Url + o)
@@ -2419,7 +2419,7 @@ def threads():    # testuser=    kevinrose     # add info
             pass
         if 'on Threads' in titleurl:
 
-            write_ossint(user, '3 - threads.com', fullname, url, '', user, '', '', '', ''
+            write_ossint(user, '3 - threads', fullname, url, '', user, '', '', '', ''
                 , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
             print(url)    
 
