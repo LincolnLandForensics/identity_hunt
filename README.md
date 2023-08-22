@@ -8,6 +8,8 @@ pip install -r requirements_identity_hunt.txt
 ## directions:
 insert emails, phone numbers, usernames into input.txt
 
+-b, --blurb           write ossint blurb
+
 -E, --emailmodules    email modules
 
 -i, --ips             ip modules
@@ -30,7 +32,6 @@ double click identity_hunt.exe
 or
 python identity_hunt.py (from command prompt) 
 ```
-
 help
 ```
 identity_hunt.exe -H
