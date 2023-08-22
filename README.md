@@ -32,6 +32,10 @@ double click identity_hunt.exe
 or
 python identity_hunt.py (from command prompt) 
 ```
+blurb
+```
+python identity_hunt.py -b
+```
 help
 ```
 identity_hunt.exe -H
