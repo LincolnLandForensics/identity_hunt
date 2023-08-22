@@ -30,6 +30,7 @@ import json
 import time
 # import random
 import socket
+import openpyxl
 import requests
 import datetime
 import argparse  # for menu system
@@ -37,13 +38,14 @@ from subprocess import call
 from tkinter import * 
 from tkinter import messagebox
 
+from docx import Document
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<     Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 author = 'LincolnLandForensics'
 description = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.9.0'
+version = '2.9.1'
 
 # Regex section
 # regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -175,7 +177,8 @@ def main():
     parser.add_argument('-I', '--input', help='', required=False)
     parser.add_argument('-O', '--output', help='', required=False)
     parser.add_argument('-E','--emailmodules', help='email modules', required=False, action='store_true')
-    parser.add_argument('-H','--howto', help='email modules', required=False, action='store_true')
+    parser.add_argument('-b','--blurb', help='write ossint blurb', required=False, action='store_true')
+    parser.add_argument('-H','--howto', help='help module', required=False, action='store_true')
     parser.add_argument('-i','--ips', help='ip modules', required=False, action='store_true')
     parser.add_argument('-p','--phonestuff', help='phone modules', required=False, action='store_true')
     parser.add_argument('-s','--samples', help='print sample inputs', required=False, action='store_true')
@@ -192,6 +195,10 @@ def main():
     if args.samples:  
         samples()
         return 0
+
+    if args.blurb:
+        write_blurb()
+
     if args.input:
         filename = args.input
     if args.output:
@@ -242,7 +249,7 @@ def main():
         
     if args.test:  
         print('testing')
-        paypal()
+        telegram()
         
     if args.usersmodules:  
         about()
@@ -304,7 +311,8 @@ def main():
         call(["chown %s.%s *.xlsx" % (tech.lower(), tech.lower())], shell=True)
 
     workbook.close()
-    input(f"See '{Spreadsheet}' for output. Hit Enter to exit...")
+    if not args.blurb:
+        input(f"See '{Spreadsheet}' for output. Hit Enter to exit...")
 
     return 0
     
@@ -326,7 +334,7 @@ def master():
         input(f"{color_red}{filename} doesnt exist.{color_reset}")
         sys.exit()
     elif os.path.getsize(filename) == 0:
-        input(f'{color_red}{filename} is empty. Fill it with username, email, ip, phone and websites.{color_reset}')
+        input(f'{color_red}{filename} is empty. Fill it with username, email, ip, phone and/or websites.{color_reset}')
         sys.exit()
     elif os.path.isfile(filename):
         print(f'{color_green}Reading {filename}{color_reset}')        
@@ -818,7 +826,7 @@ def familytreephone():# testPhone= 708-372-8101 DROP THE LEADING 1
         url = ('https://www.familytreenow.com/search/genealogy/results?phoneno=%s' %(phone.replace("-", "")))
       
         if 1==1:        
-            print(f'{color_yellow}{phone}{color_reset}')
+            print(f'{color_yellow}{url}{color_reset}')
             write_ossint(phone, '8 - familytree', fullname, url, '', '', phone, '', '', ''
                 , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
@@ -2147,7 +2155,7 @@ def thatsthemip():# testIP= 8.8.8.8
                 url = ('')
         # pagestatus = ''                
         if url != '':
-            print(f'{color_green}{url}{color_yellow}	{ip}{color_reset}') 
+            print(f'{color_green}{url}{color_reset}') 
             write_ossint(ip, '6 - thatsthem', '', url, '', '', '', ip, '', ''
                 , city, state, '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', referer, '', titleurl, pagestatus)
 
@@ -2823,7 +2831,66 @@ def wordpresssearchemail():    # testuser=    kevinrose@gmail.com
                             , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus, 'research')
             print(f'{color_red}{url}{color_reset}')    
             
-                        
+def write_blurb():
+    '''
+    read intel.xlsx and write ossint_.docx to describe what you found.
+    '''
+    print('hello world')     # temp
+    excel_file = "intel.xlsx"
+    docx_file = "ossint_.docx"
+
+    if not os.path.exists(excel_file):
+        input(f"{color_red}{excel_file} doesnt exist.{color_reset}")
+        sys.exit()
+    elif os.path.getsize(excel_file) == 0:
+        input(f'{color_red}{excel_file} is empty. Fill it with username, email, ip, phone and/or websites.{color_reset}')
+        sys.exit()
+    elif os.path.isfile(excel_file):
+        print(f'{color_green}Reading {excel_file}{color_reset}')        
+        # write_blurb(excel_file, docx_file)
+    else:
+        input(f'{color_red}See {excel_file} does not exist. Hit Enter to exit...{color_reset}')
+        sys.exit()
+
+
+    # Open the Excel file
+    wb = openpyxl.load_workbook(excel_file)
+    sheet = wb.active
+    
+    # Find the column headers
+    header_row = sheet[1]
+    column_names = [cell.value for cell in header_row]    
+    
+    # Columns to skip
+    columns_to_skip = ["ranking", "content", "titleurl", "pagestatus"]
+    
+    for idx, cell in enumerate(header_row, start=1):
+        if cell.value == "fullname":
+            fullname_column_index = idx
+            # print(f'Fullname: {fullname_column_index}')
+            break
+
+    if fullname_column_index is None:
+        print("Fullname column not found in the Excel file.")
+        return
+
+    # Create a new Word document
+    doc = Document()
+ 
+    sentence = (f'An open source search revealed the following details.\n\n')
+    print(f'{sentence}')  
+    doc.add_paragraph(sentence)    
+    # Loop through rows in the Excel file and write to Word document
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        sentence = "\n".join(f"{column}: {value}" for column, value in zip(column_names, row) if column not in columns_to_skip and value is not None)
+        doc.add_paragraph(sentence)
+        doc.add_paragraph("")  # Add an empty line between rows
+
+
+    # Save the Word document
+    doc.save(docx_file)
+    print(f"Data written to {docx_file}")
+    
 def write_ossint(query, ranking, fullname, url, email , user, phone, ip, entity, 
     fulladdress, city, state, zip, country, note, aka, dob, gender, info, 
     misc, lastname, firstname, middlename, friend, otherurls, otherphones, 
@@ -2921,6 +2988,7 @@ def usage():
     print(f'{file} Version: {version} by {author}')
     print(f'\n    {color_yellow}insert your input into input.txt')
     print(f'\nExample:')
+    print(f'    {file} -b')
     print(f'    {file} -E')
     print(f'    {file} -i')
     print(f'    {file} -l')
