@@ -2833,17 +2833,16 @@ def wordpresssearchemail():    # testuser=    kevinrose@gmail.com
             
 def write_blurb():
     '''
-    read intel.xlsx and write ossint_.docx to describe what you found.
+    read Intel.xlsx and write ossint_.docx to describe what you found.
     '''
-    print('hello world')     # temp
-    excel_file = "intel.xlsx"
+    excel_file = "Intel.xlsx"
     docx_file = "ossint_.docx"
 
     if not os.path.exists(excel_file):
         input(f"{color_red}{excel_file} doesnt exist.{color_reset}")
         sys.exit()
     elif os.path.getsize(excel_file) == 0:
-        input(f'{color_red}{excel_file} is empty. Fill it with username, email, ip, phone and/or websites.{color_reset}')
+        input(f'{color_red}{excel_file} is empty. Fill it with intel you found.{color_reset}')
         sys.exit()
     elif os.path.isfile(excel_file):
         print(f'{color_green}Reading {excel_file}{color_reset}')        
@@ -2862,7 +2861,8 @@ def write_blurb():
     column_names = [cell.value for cell in header_row]    
     
     # Columns to skip
-    columns_to_skip = ["ranking", "content", "titleurl", "pagestatus"]
+    columns_to_skip = ["ranking", "content", "referer", "osurl", "titleurl", "pagestatus"]
+
     
     for idx, cell in enumerate(header_row, start=1):
         if cell.value == "fullname":
