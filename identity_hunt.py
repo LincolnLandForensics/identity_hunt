@@ -45,7 +45,7 @@ from docx import Document
 author = 'LincolnLandForensics'
 description = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '2.9.1'
+version = '2.9.2'
 
 # Regex section
 # regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -222,15 +222,19 @@ def main():
         usage()
         return 0
 
-    if args.emailmodules:  
+    if args.emailmodules and len(emails) > 0:  
+        print(f'Emails = {emails}')
         ghunt()
+        google_calendar() # fails
+        have_i_been_pwned()
         holehe_email()
         osintIndustries_email()
         thatsthememail()    # https://thatsthem.com/email/smooth8101@yahoo.com
         # twitteremail()    # auth required    
         wordpresssearchemail()  # requires auth
         
-    if args.ips:  
+    if args.ips and len(ips) > 0:  
+        print(f'IPs = {ips}')
         # geoiptool() # works but need need to rate limit; expired certificate breaks this
         resolverRS()
         thatsthemip()
@@ -238,7 +242,8 @@ def main():
         whatismyip()
         
     # phone modules
-    if args.phonestuff:
+    if args.phonestuff and len(phones) > 0:
+        print(f'phones = {phones}')
         familytreephone()
         thatsthemphone()   # retest
         reversephonecheck()
@@ -248,10 +253,11 @@ def main():
         whocalld()
         
     if args.test:  
-        print('testing')
-        telegram()
+        print(f'testing')
+        google_calendar()
         
-    if args.usersmodules:  
+    if args.usersmodules and len(users) > 0:  
+        print(f'users = {users}')    
         about()
         bitbucket() # add fullname
         blogspot_users()
@@ -272,6 +278,7 @@ def main():
         kik()   
         massageanywhere()
         mastadon() 
+        myfitnesspal()
         myshopify()
         myspace_users()
         paypal()  # needs work
@@ -294,10 +301,12 @@ def main():
         sherlock()
         whatsmyname()
 
-    if args.websitetitle:  
+    if args.websitetitle and len(websites) > 0:  
+        # print(f'websites = {websites}')   
         titles()    # alpha
         
-    if args.websites:  
+    if args.websites and len(websites) > 0:  
+        print(f'websites = {websites}')    
         redirect_detect()
         robtex()
         titles()    # alpha
@@ -547,7 +556,7 @@ def fastpeoplesearch():# testPhone= 385-347-1531
                 , city, '', '', country, note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
 def blogspot_users(): # testuser = kevinrose
-    print(f'\n\t<<<<< blogspot users >>>>>')
+    print(f'{color_yellow}\n\t<<<<< blogspot {color_blue}users{color_yellow} >>>>>{color_reset}')
     
     for user in users:
         url = f"https://{user}.blogspot.com"
@@ -712,9 +721,6 @@ def create_ossint_xlsx():
     sheet2.write(1, 1, 'Verified or High Confidence', green_format)
     sheet2.write(2, 1, 'Research/Verify', orange_format)
     sheet2.write(3, 1, 'False Positive or Dead Link', red_format)
-
-
-
 
 
 def disqus(): # testuser = kevinrose
@@ -990,16 +996,27 @@ def geoiptool():    # testuser= 77.15.67.232
         write_ossint(ip, '6 - geodatatool', '', url, '', '', '', ip, '', ''
         , city, state, zip, country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
 
-def ghunt():# testEmail= kevinrose@gmail.com   
+def google_calendar():# testEmail= kevinrose@gmail.com   
+    print(f'{color_yellow}\n\t<<<<< google calendar {color_blue}emails{color_yellow} >>>>>{color_reset}')
     for email in emails:
-        (note, url) = ('', '')
-        note = ('cd C:\Forensics\scripts\python\git-repo\GHunt && ghunt email %s' %(email)) 
-        if email.endswith('gmail.com'):
-            ranking = ('8 - ghunt')
-        else:
-            ranking = ('9 - ghunt')  
-        write_ossint(email, ranking, '', url, email, '', '', '', '', ''
-        , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'research')
+        (content, note) = ('', '')
+        if 'gmail.com' in email.lower():
+            url = (f'https://calendar.google.com/calendar/u/0/embed?src={email}&pli=1')
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+            if ('you do not have the permission to view') in content: 
+                note = 'you do not have the permission to view'
+                write_ossint(email, '8 - calendar', '', url, '', '', '', '', email, ''
+                    , '', '', '', '', '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+                print(f'{color_green} {email}   {url}{color_reset}')
+            elif ('Events shown in time zone') in content:
+                note = 'Events shown in time zone'
+                write_ossint(email, '4 - calendar', '', url, '', '', '', '', email, ''
+                    , '', '', '', '', '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+                print(f'{color_green} {email}   {url}{color_reset}')                
+            else:
+                write_ossint(email, '9 - calendar', '', url, '', '', '', '', email, ''
+                    , '', '', '', '', note, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+                print(f'{color_yellow} {email}   {url}{color_reset}')
 
 
 def gravatar(): # testuser = kevinrose      https://en.gravatar.com/kevinrose
@@ -1045,6 +1062,14 @@ def gravatar(): # testuser = kevinrose      https://en.gravatar.com/kevinrose
                 write_ossint(user, '7 - gravatar', fullname, url, '', user, '', '', '', ''
                     , city, '', '', country, note, '', '', '', info, '', lastname, firstname, '', '', otherurls, '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
         
+
+def have_i_been_pwned(): 
+    if len(emails) > 0:
+        # print(f"There are {len(emails)} email(s) in the emails list: {emails}")
+        print(f'\n\t{color_yellow}<<<<< Manually check haveibeenpwned.com >>>>>{color_reset}')
+        url = ('https://haveibeenpwned.com')
+        write_ossint('', '9 - manual', '', url, '', '', '', '', '', ''
+                , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
 
 def holehe_email():# testEmail= kevinrose@gmail.com
     print(f'{color_yellow}\n\t<<<<< holehe {color_blue}emails{color_yellow} >>>>>{color_reset}')
@@ -1159,8 +1184,8 @@ def instructables(): # testuser = kevinrose
         url = ('https://www.instructables.com/member/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         if '404' not in pagestatus:
-            
-            titleUrl = titleurl.replace("'s Profile - Instructables","")
+            if "'" in titleurl:
+                titleurl = titleurl.split("'")[0]
             fullname = titleurl
             print(f'{color_green}{url}{color_yellow}	{titleurl}{color_reset}') 
             write_ossint(user, '7 - instructables', fullname, url, '', user, '', '', '', ''
@@ -1338,7 +1363,10 @@ def mastadon(): # testuser = kevinrose
             data = json.loads(content)              # Convert JSON data to Python dictionary
             fullname = data["accounts"][0]["display_name"]
             info = data['accounts'][0]['avatar']
-        
+
+        if user == fullname:
+            fullname = ''
+                    
         if " " in fullname:
             firstname = fullname.split(" ")[0]
             lastname = fullname.split(" ")[1]
@@ -1347,6 +1375,25 @@ def mastadon(): # testuser = kevinrose
             print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
             write_ossint(user, '3 - mastadon', fullname, url, email, user, '', '', '', ''
                , city, '', '', country, note, '', '', '', info, '', lastname, firstname, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)
+
+def myfitnesspal(): # testuser = kevinrose
+    print(f'{color_yellow}\n\t<<<<< myfitnesspal {color_blue}users{color_yellow} >>>>>{color_reset}')
+    for user in users:    
+        (Success, fullname, lastname, firstname, case, gender) = ('','','','','','')
+        (photo, country, website, email, language, username) = ('','','','','','')
+        (city, note, info, email, content, pagestatus) = ('', '', '', '', '', '')
+        (lastname, firstname, data, dob) = ('', '', '','')
+        
+        user = user.rstrip()
+        url = (f'https://www.myfitnesspal.com/profile/{user}')
+
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        if "uccess" in pagestatus and 'This resource could not be found' not in content:
+            print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
+            write_ossint(user, '3 - myfitnesspal', fullname, url, email, user, '', '', '', ''
+               , city, '', '', country, note, '', dob, '', info, '', lastname, firstname, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', pagestatus)
+
 
 def myshopify():    # testuser=    rothys
     print(f'{color_yellow}\n\t<<<<< myshopify {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -1404,11 +1451,11 @@ def myspace_users():
 
             
 def osintIndustries_email():
-
-    print(f'{color_yellow}\n\t<<<<< osint.Industries entry >>>>>{color_reset}')
-    url = ('https://osint.industries/email#')
-    write_ossint('', '9 - manual', '', url, '', '', '', '', '', ''
-                , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
+    if len(emails) > 0:
+        print(f'{color_yellow}\n\t<<<<< osint.Industries entry >>>>>{color_reset}')
+        url = ('https://osint.industries/email#')
+        write_ossint('', '9 - manual', '', url, '', '', '', '', '', ''
+                    , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
     
     
 def patreon(): # testuser = kevinrose
@@ -1423,10 +1470,13 @@ def patreon(): # testuser = kevinrose
             titleurl = titleurl.replace(' Patreon','')
             if ' | ' in titleurl:   
                 fullname = titleurl.split(' | ')[0]
-                if user == fullname:
-                    fullname = ''
                 titleUrl = titleurl.replace("Patreon","").strip()
                 note = titleurl.split(' | ')[1]
+                if user == fullname:
+                    fullname = ''
+                elif 'Patreon' in fullname:
+                    fullname = ''
+
             print(f'{color_green}{url}{color_yellow}	{titleurl}{color_reset}') 
             
             
@@ -1479,16 +1529,24 @@ def paypal(): # testuser = kevinrose
             try:    
                 email = re.search(r'"displayEmail":(null|".*?")', data).group(1)
             except:pass                
+            if "null" in email:
+                email = ''
             try:    
                 phone = re.search(r'"displayMobilePhone":(null|".*?")', data).group(1)
+                # phone = re.search(r'"displayMobilePhone":(null|".*?")', data)
             except:pass                
+            if "null" in phone:
+                phone = ''
+            
             try:    
                 fulladdress = re.search(r'"displayAddress":"(.*?)"', data).group(1)
             except:pass                
             try:    
                 otherurl = re.search(r'"website":(null|".*?")', data).group(1)
             except:pass
-
+            if "null" in otherurl:
+                otherurl = ''
+                
             print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
             write_ossint(user, '4 - paypal', fullname, url, email, user, phone, '', '', fulladdress
                 , city, '', '', country, note, '', '', '', '', '', lastname, firstname, '', '', otherurl, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')        
@@ -1539,7 +1597,7 @@ def plaxoemail():    # testEmail= craig@craigslist.org#
         # if ('Claimed') in str(response): 
             write_ossint(email, '7 - plaxo.com (email exists)', '', url, '', '', '', '', email, ''
                 , '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '')
-            print(f'{color_green} {Email}   {Url}{color_reset}')
+            print(f'{color_green} {email}   {url}{color_reset}')
 
             
 def print_logo():
@@ -2247,12 +2305,15 @@ def tiktok(): # testuser = kevinrose
         user = user.rstrip()
         url = ('https://tiktok.com/@%s?' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
-
+        
         if 'uccess' in pagestatus:
             fullname = titleurl
             fullname = fullname.split(' (')[0]
             if fullname == user:
                 fullname = ''
+            elif 'Make Your Day' in fullname:
+                fullname = ''
+                
             print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
             write_ossint(user, '4 - tiktok', fullname, url, '', user, '', '', '', ''
                 , city, '', '', country, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', titleurl, pagestatus)        
@@ -3015,6 +3076,8 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<<Future Wishlist  >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+https://www.myfitnesspal.com/profile/kevinrose
+add ID and photo , phone2 column
 fix dnsdomains if it ends with / , take it off
 tkinter purely gui interface
 .replace isn't working in several modules
