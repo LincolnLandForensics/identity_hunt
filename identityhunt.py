@@ -16,6 +16,9 @@ import time
 import random
 import openpyxl
 import requests
+
+from docx import Document
+
 from openpyxl import load_workbook, Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
 
@@ -25,10 +28,33 @@ import argparse  # for menu system
 # <<<<<<<<<<<<<<<<<<<<<<<<<<     Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 author = 'LincolnLandForensics'
-description = "OSINT: track people down by username, email, ip, phone and website"
+description2 = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '3.0.0'
+version = '3.0.2'
 
+headers_intel = [
+    "query", "ranking", "fullname", "url", "email", "user", "phone",
+    "business", "fulladdress", "city", "state", "country", "note", "AKA",
+    "DOB", "SEX", "info", "misc", "firstname", "middlename", "lastname",
+    "associates", "case", "sosfilenumber", "owner", "president", "sosagent",
+    "managers", "Time", "Latitude", "Longitude", "Coordinate",
+    "original_file", "Source", "Source file information", "Plate", "VIS", "VIN",
+    "VYR", "VMA", "LIC", "LIY", "DLN", "DLS", "content", "referer", "osurl",
+    "titleurl", "pagestatus", "ip", "dnsdomain"
+]
+
+headers_locations = [
+    "#", "Time", "Latitude", "Longitude", "Address", "Group", "Subgroup"
+    , "Description", "Type", "Source", "Deleted", "Tag", "Source file information"
+    , "Service Identifier", "Carved", "Name", "business", "number", "street"
+    , "city", "county", "state", "zipcode", "country", "fulladdress", "query"
+    , "Sighting State", "Plate", "Capture Time", "Capture Network", "Highway Name"
+    , "Coordinate", "Capture Location Latitude", "Capture Location Longitude"
+    , "Container", "Sighting Location", "Direction", "Time Local", "End time"
+    , "Category", "Manually decoded", "Account", "PlusCode", "Time Original", "Timezone"
+    , "Icon", "origin_file", "case", "Index"
+    ]
+    
 
 # Regex section
 # regex_host = re.compile(r'\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+(?i)(?!exe|php|dll|doc' \
@@ -92,7 +118,6 @@ color_blue = ''
 color_purple = ''
 color_reset = ''
 
-
 if sys.version_info > (3, 7, 9) and os.name == "nt":
     version_info = os.sys.getwindowsversion()
     major_version = version_info.major
@@ -105,19 +130,13 @@ if sys.version_info > (3, 7, 9) and os.name == "nt":
         color_red = Fore.RED
         color_yellow = Fore.YELLOW
         color_green = Fore.GREEN
+  
         color_blue = Fore.BLUE
         color_purple = Fore.MAGENTA
         color_reset = Style.RESET_ALL
 
-# <<<<<<<<<<<<<<<<<<<<<<<<<<      Pre-Sets       >>>>>>>>>>>>>>>>>>>>>>>>>>
-
-author = 'LincolnLandForensics'
-description2 = "OSINT: track people down by username, email, ip, phone and website"
-version = '2.9.4'
-
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<     Menu           >>>>>>>>>>>>>>>>>>>>>>>>>>
-
 
 def main():
 
@@ -144,7 +163,7 @@ def main():
     # global inputDetails
     # inputDetails = 'no'
 
-    global outuput_xlsx
+    global output_xlsx
         
 
     global row
@@ -156,7 +175,7 @@ def main():
     global users
     global dnsdomains
     global websites
-    
+    global data
     input_file_type = ''
     data = []
     emails = []
@@ -175,6 +194,7 @@ def main():
     parser.add_argument('-b','--blurb', help='write ossint blurb', required=False, action='store_true')
     parser.add_argument('-H','--howto', help='help module', required=False, action='store_true')
     parser.add_argument('-i','--ips', help='ip modules', required=False, action='store_true')
+    parser.add_argument('-l','--locations', help='convert intel 2 locations format', required=False, action='store_true')
     parser.add_argument('-p','--phonestuff', help='phone modules', required=False, action='store_true')
     parser.add_argument('-s','--samples', help='print sample inputs', required=False, action='store_true')
     parser.add_argument('-t','--test', help='testing individual modules', required=False, action='store_true')
@@ -191,13 +211,19 @@ def main():
     if args.samples:  
         samples()
         return 0 
+        sys.exit()
+
+    if args.howto:  # this section might be redundant
+        parser.print_help()
+        usage()
+        return 0
+        sys.exit()
+
 
 
 # default input
     if not args.input: 
         input_file_type = 'txt'
-        print(f' the default is to read {filename}')
-        # input_xlsx = "intel_test.xlsx"        
 
 # txt input
     elif '.txt' in args.input:
@@ -216,9 +242,9 @@ def main():
         
 # output xlsx
     if not args.output:     # openpyxl conversion
-        outuput_xlsx = "Intel_.xlsx"        
+        output_xlsx = "Intel_.xlsx"        
     else:
-        outuput_xlsx = args.output
+        output_xlsx = args.output
 
 # if text file input
     if input_file_type == 'txt':
@@ -243,29 +269,35 @@ def main():
             input(f'{color_red}{input_xlsx} is empty. Fill it with username, email, ip, phone and/or websites.{color_reset}')
             sys.exit()
         elif os.path.isfile(input_xlsx):
-            # print(f'{color_green}Reading {input_xlsx}{color_reset}')        
-            data = read_xlsx_new(input_xlsx)
-            # inputfile = open(input_xlsx)
+            data = read_xlsx(input_xlsx)
+            # data = read_xlsx_basic(input_xlsx)
+            if args.convert:
+                file_exists = os.path.exists(input_xlsx)
+                if file_exists == True:
+                    print(f' converting {input_xlsx}')    # temp
+                    # data = read_xlsx(input_xlsx)
+                    data = read_xlsx_basic(input_xlsx)
+                    # write_intel(data)
+                    write_intel_basic(data, output_xlsx)
+                    
+                else:
+                    print(f'{color_red}{input_xlsx} does not exist{color_reset}')
+                    exit()
+                sys.exit()
+                
+            if args.blurb:
+                write_blurb()
+                sys.exit()
 
-    if args.convert:
+            if args.locations:
+                # data = read_xlsx(input_xlsx)    # never finishes
+                data = read_xlsx_basic(input_xlsx)    # works
+                write_locations(data)   # works
+                # write_locations_basic(data, output_xlsx)    # works
+                sys.exit()
 
-        file_exists = os.path.exists(input_xlsx)
-        if file_exists == True:
-            # print(f'{color_green}Reading {input_xlsx} {color_reset}')
-            
-            data = read_xlsx_new(input_xlsx)
-            # write_xlsx_new(data)
-            # write_intel(data)
-            # workbook.close()
-            # print(f'{color_green}Writing to {outuput_xlsx} {color_reset}')
-        else:
-            print(f'{color_red}{input_xlsx} does not exist{color_reset}')
-            exit()
-
-    # if args.blurb:
-        # write_blurb()
-
-
+            data = read_xlsx(input_xlsx)
+  
     # Check if no arguments are entered
     if len(sys.argv) == 1:
         print(f"{color_yellow}You didn't select any options so I'll run the major options{color_reset}")
@@ -275,104 +307,104 @@ def main():
         args.phonestuff = True
         args.usersmodules = True
         args.websites = True
-    
-    # any
-    # one_plus()
    
-    if args.howto:  # this section might be redundant
-        parser.print_help()
-        usage()
-        return 0
 
+        
+        
     if args.emailmodules and len(emails) > 0:  
         print(f'Emails = {emails}') # temp
-        main_email()
+        main_email()    # 
         carrot_email()
         ghunt()  # this is overwriting data
-        google_calendar() # fails
-        have_i_been_pwned()
-        holehe_email()
-        osintIndustries_email()
-        thatsthememail()
+        google_calendar()     #
+        have_i_been_pwned()    #
+        holehe_email()    #
+        osintIndustries_email()    #
+        thatsthememail()    #
         ## twitteremail()    # auth required    
         wordpresssearchemail()  # requires auth
         
     if args.ips and len(ips) > 0:  
         print(f'IPs = {ips}')
+        main_ip()
         ## geoiptool() # works but need need to rate limit; expired certificate breaks this
-        resolverRS()
+        resolverRS()    #? 
         # thatsthemip() # broken
-        whoisip()   
-        whatismyip()
+        whoisip()    #
+        whatismyip()    #
         
     ### phone modules
     if args.phonestuff and len(phones) > 0:
         print(f'phones = {phones}')
-        familytreephone()
-        thatsthemphone()   # retest
-        reversephonecheck()
-        spydialer()
-        validnumber()
-        whitepagesphone()
-        whocalld()
+        main_phone()
+        familytreephone()    #
+        thatsthemphone()   #
+        reversephonecheck()    #
+        spydialer()    #
+        validnumber()    #
+        whitepagesphone()    #
+        whocalld()    #
         
     if args.test:  
         print(f' using test module')
-        thatsthemphone()
+        twitter()
+        blogspot_users()    # test
+        
         
     if args.usersmodules and len(users) > 0:  
         print(f'users = {users}')    
-        about()
-        bitbucket()
-        blogspot_users()
+        main_user()
+        about()    #
+        bitbucket()    #
+        blogspot_users()    # test
         disqus()    # test
         # ebay()  # all false positives due to captcha
-        etsy()
-        facebook() 
-        familytree()
+        etsy()  # task
+        facebook()     #
+        familytree()    #
 
         flickr()   # add photo, note, name, info
-        freelancer()
+        freelancer()    #
         friendfinder()  # add (fullname, city, country, note, DOB, SEX)
-        foursquare()
-        garmin()
+        foursquare()    #
+        garmin()    #
         gravatar()  # grab bonus urls
-        imageshack()
-        instagram()
-        instructables() 
+        imageshack()    #
+        instagram()    #
+        instructables()     #
         keybase()   # add location and twitter, and photo
-        kik()   
+        kik()    #
         # massageanywhere()   # broken ssl query
-        mastadon() 
-        myfitnesspal()
-        myshopify()
-        myspace_users()
+        mastadon()    #
+        myfitnesspal()    #
+        myshopify()    #
+        myspace_users()    #
         paypal()  # needs work
-        patreon()
-        poshmark()    
-        public()    
-        sherlock()
+        patreon()    #
+        poshmark()    #    
+        public()    #
+        sherlock()    #
         snapchat()    # must manually verify
-        spotify()
+        spotify()    #
         ## telegram()# crashes the script
-        threads()        
-        tiktok()
+        threads()    #
+        tiktok()    #
         tinder() # add DOB, schools
-        truthSocial()
-        ##  twitter()   # needs auth
-        whatsmyname()
-        wordpress() 
-        wordpress_profiles()  
-        youtube()
-
-
+        truthSocial()   # false positives
+        twitter()   # needs auth
+        whatsmyname()    #
+        wordpress()    #
+        wordpress_profiles()    #  
+        youtube()    #
 
     if args.websitetitle and len(websites) > 0:  
         print(f'websites = {websites}')   
+        main_website()
         # titles()    # alpha
         
     if args.websites and len(websites) > 0:  
         print(f'websites = {websites}')    
+        main_website()
         redirect_detect()
         robtex()
         # titles()    # alpha
@@ -380,7 +412,6 @@ def main():
         whoiswebsite()
 
     write_intel(data)
-
 
     # set linux ownership    
     if sys.platform == 'win32' or sys.platform == 'win64':
@@ -399,38 +430,6 @@ def main():
 
 # <<<<<<<<<<<<<<<<<<<<<<<<<<  Sub-Routines   >>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
-
-# Load the workbook
-# wb = openpyxl.load_workbook('Intel_test.xlsx')
-
-# Select the active sheet
-# sheet = wb.active
-
-# Headers
-    # headers = [
-        # "query", "ranking", "fullname", "url", "email", "user", "phone"
-        # , "business", "fulladdress", "city", "state", "country", "note", "AKA"
-        # , "DOB", "SEX", "info", "misc", "lastname", "firstname", "middlename"
-        # , "associates", "case", "sosfilenumber", "owner", "president", "sosagent"
-        # , "managers", "Time", "Latitude", "Longitude", "Coordinate"
-        # , "original_file", "Source", "Source file information", "Plate", "VIS", "VIN"
-        # , "VYR", "VMA", "LIC", "LIY", "DLN", "DLS", "content", "referer", "osurl"
-        # , "titleurl", "pagestatus", "ip", "dnsdomain"
-    # ]
-
-# Find the index of "lastname" column
-# lastname_index = headers.index("lastname") + 1  # Adjusting to 1-based index
-
-# Convert "lastname" to uppercase
-# for row in sheet.iter_rows(min_row=2, values_only=True):
-    # lastname = row[lastname_index - 1]  # Adjusting to 0-based index
-    # if lastname is not None:
-        # row_data = list(row)
-        # row_data[lastname_index - 1] = lastname.upper()  # Adjusting to 0-based index
-        # print(f'lastname.upper() = {lastname.upper()}') # temp
-        # sheet.append(row_data)
 
 def about(): # testuser = kevinrose
     """
@@ -529,7 +528,7 @@ def blogspot_users(): # testuser = kevinrose
         url = f"https://{user}.blogspot.com"
 
         (content, referer, osurl, titleurl, pagestatus) = request_url(url)
-        (fullname) = ('')
+        (fullname, firstname, lastname, middlename) = ('', '', '', '')
 
         if 'Success' in pagestatus:
             titleurl = titleurl_og(content)
@@ -546,8 +545,9 @@ def blogspot_users(): # testuser = kevinrose
             row_data["firstname"] = firstname
             row_data["lastname"] = lastname 
             row_data["url"] = url
+            # row_data["titleurl"] = titleurl
             row_data["user"] = user
-
+            
             data.append(row_data)
 
 
@@ -723,47 +723,11 @@ def facebook(): # testuser = kevinrose
             row_data["lastname"] = lastname
             row_data["url"] = url
             row_data["user"] = user
-            row_data["titleurl"] = titleurl            
-            row_data["pagestatus"] = pagestatus            
-            row_data["content"] = content            
+            # row_data["titleurl"] = titleurl            
+            # row_data["pagestatus"] = pagestatus            
+            # row_data["content"] = content            
 
             data.append(row_data)        
-
-    # for phone in phones:
-        # row_data = {}
-        # (query, ranking) = (user, '8 - Facebook')
-        # (country, city, state, zip, case, note) = ('', '', '', '', '', '')
-        # (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
-        # phone = phone.replace('(','').replace(')','').replace(' ','')
-        
-        # if re.search(regex_number_fb, phone):
-            # (query, ranking) = (user, '8 - facebook')
-
-            # url = ('https://www.facebook.com/%s' %(phone))
-            # (content, referer, osurl, titleurl, pagestatus) = request(url)
-            # if 'Success' in pagestatus and 'vi-vn.facebook.com' in content:
-                # user = phone
-                # phone = ''
-                # fullname = titleurl
-
-            # if 1==1:  
-                # print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}')
-                # row_data["query"] = query
-                # row_data["ranking"] = ranking
-                # row_data["fullname"] = fullname
-                # row_data["firstname"] = firstname            
-                # row_data["lastname"] = lastname
-                # row_data["url"] = url
-                # row_data["user"] = user
-                # row_data["city"] = city 
-                # row_data["state"] = state
-                # row_data["country"] = country                 
-                # row_data["note"] = note 
-                # row_data["titleurl"] = titleurl            
-                # row_data["pagestatus"] = pagestatus            
-
-                # data.append(row_data)
-
 
 
 def familytree(): 
@@ -783,19 +747,16 @@ def familytreephone():# testPhone= 708-372-8101 DROP THE LEADING 1
     for phone in phones:
         row_data = {}
         (query, ranking) = (phone, '8 - familytree')
-        
-        
-        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+
+        (country, city, state, zipcode, case, note) = ('', '', '', '', '', '')
         (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
-        phone = phone.replace('(','').replace(')','').replace(' ','')
-        
-        if phone.startswith('1'):
-            phone = phone.replace('1','')
-        url = ('https://www.familytreenow.com/search/genealogy/results?phoneno=%s' %(phone.replace("-", "")))
+
+        url = ('https://www.familytreenow.com/search/genealogy/results?phoneno=%s' %(phone.lstrip('1')))
       
         if 1==1:        
             row_data["query"] = query
             row_data["ranking"] = ranking
+            row_data["url"] = url
             row_data["phone"] = phone
             data.append(row_data)
 
@@ -835,7 +796,7 @@ def flickr(): # testuser = kevinrose
             data.append(row_data)           
 
 def foursquare():    # testuser=    john
-    print(f'{color_yellow}\n\t<<<<< foursquare {color_blue}users{color_yellow} >>>>>{color_reset}')    
+    print(f'{color_yellow}\n\t<<<<< foursquare {color_blue}users>>>>>{color_reset}')    
 
     for user in users:    
         row_data = {}
@@ -867,7 +828,7 @@ def foursquare():    # testuser=    john
             if '' in fullname:
                 (fullname, firstname, lastname, middlename) = fullname_parse(fullname)
         
-            print(f'{color_green}{url}{color_reset}{fullname}')    
+            print(f'{color_green}{url}{color_yellow} {fullname}{color_reset}')    
 
             row_data["query"] = query
             row_data["ranking"] = ranking
@@ -1404,11 +1365,11 @@ def kik(): # testuser = kevinrose
         (query, ranking) = (user, '4 - kik')
         (fullname, titleurl, pagestatus, content) = ('', '', '', '')
         (note, firstname, lastname, photo, misc, lastseen) = ('', '', '', '', '', '')
-        (otherurl) = ('')
+        (otherurl, info, misc) = ('', '', '')
         user = user.rstrip()
         url = ('https://ws2.kik.com/user/%s' %(user))
         
-        otherurl = ('http://kik.me/%s' %(user))
+        misc = ('http://kik.me/%s' %(user))
                
         
         (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -1443,8 +1404,9 @@ def kik(): # testuser = kevinrose
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["user"] = user
-            row_data["url"] = url
+            row_data["url"] = misc
             row_data["note"] = note
+            row_data["misc"] = url
             row_data["info"] = photo        
             row_data["fullname"] = fullname
             row_data["firstname"] = firstname
@@ -1622,6 +1584,51 @@ def main_email():
             row_data["ranking"] = ranking
             row_data["email"] = email
             data.append(row_data)
+
+def main_ip(): 
+
+    for ip in ips:
+        row_data = {}
+        (query, ranking) = (ip, '1 - main')
+        if 1==1:
+        # if '.' in ip.lower():
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["ip"] = ip
+            data.append(row_data)
+            
+def main_phone(): 
+
+    for phone in phones:
+        row_data = {}
+        (query, ranking) = (phone, '1 - main')
+
+        row_data["query"] = query
+        row_data["ranking"] = ranking
+        row_data["phone"] = phone
+        data.append(row_data)            
+
+
+def main_user():
+    for user in users:
+        row_data = {}
+        (query, ranking) = (user, '1 - main')
+
+        row_data["query"] = query
+        row_data["ranking"] = ranking
+        row_data["user"] = user
+        data.append(row_data)      
+
+
+def main_website():
+    for website in websites:
+        row_data = {}
+        (query, ranking) = (website, '1 - main')
+
+        row_data["query"] = query
+        row_data["ranking"] = ranking
+        row_data["website"] = website
+        data.append(row_data) 
 
 def massageanywhere():    # testuser=   Misty0427
     print(f'{color_yellow}\n\t<<<<< massageanywhere {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -1973,7 +1980,8 @@ def read_text(filename):
         parses the data into lists
         exports it to the outputfile
     """
-
+    print(f'{color_green}Reading  {filename}{color_reset}')  
+    print(f'data = {data}') # temp
     if not os.path.exists(filename):
         input(f"{color_red}{filename} doesnt exist.{color_reset}")
         sys.exit()
@@ -1981,7 +1989,6 @@ def read_text(filename):
         input(f'{color_red}{filename} is empty. Fill it with username, email, ip, phone and/or websites.{color_reset}')
         sys.exit()
     elif os.path.isfile(filename):
-        # print(f'{color_green}Reading {filename}{color_reset}')        
         inputfile = open(filename)
     else:
         input(f'{color_red}See {filename} does not exist. Hit Enter to exit...{color_reset}')
@@ -2070,7 +2077,7 @@ def read_text(filename):
                 logsource = 'IOC-dnsdomain'
                 dnsdomain = query
             url = url.rstrip('/')
-            if url.lower() not in websites:            # don't add duplicates
+            if "@" not in url and url.lower() not in websites:            # don't add duplicates
                 websites.append(url)            
             dnsdomain = url.lower()
             dnsdomain = dnsdomain.replace("https://", "")
@@ -2092,7 +2099,13 @@ def read_text(filename):
 
         elif re.search(regex_phone, query) or re.search(regex_phone11, query) or re.search(regex_phone2, query):  # regex_phone
             (phone) = (query)
-            if query.lower() not in phones:            # don't add duplicates
+
+            phone = phone.replace("-", '')
+            phone = phone.replace('(','').replace(')','').replace(' ','')
+            phone = phone.replace("+", "")            
+            phone = phone.lstrip('1')
+
+            if phone not in phones:            # don't add duplicates
                 phones.append(phone)
 
             
@@ -2110,26 +2123,27 @@ def read_text(filename):
     return emails,dnsdomains,ips,users,phones,websites
 
 
-def read_xlsx_new(input_xlsx):
+def read_xlsx(input_xlsx):
 
     """Read data from an xlsx file and return as a list of dictionaries.
-    Read XLSX Function: The read_xlsx_new() function reads data from the input 
+    Read XLSX Function: The read_xlsx() function reads data from the input 
     Excel file using the openpyxl library. It extracts headers from the 
     first row and then iterates through the data rows, creating dictionaries 
     for each row with headers as keys and cell values as values.
     
     """
-    print(f'{color_green}Reading {input_xlsx}{color_reset}')  
-    
+    print(f'{color_green}Reading {input_xlsx}{color_reset} ( read_xlsx)')  
     wb = openpyxl.load_workbook(input_xlsx, read_only=True, data_only=True, keep_links=False)
     ws = wb.active
-    data = []
+    data = [] 
+    # print(f'data1 = {data}') # temp
 
     # get header values from first row
     headers = [cell.value for cell in ws[1]]
 
     # get data rows
     for row in ws.iter_rows(min_row=2, values_only=True):
+        row_data = {}   # test
         row_data = dict(zip(headers, row))
 
     # dnsdomains = []
@@ -2199,8 +2213,18 @@ def read_xlsx_new(input_xlsx):
         
         if AKA == "":
             AKA = row_data.get("aka", "")
-
         if AKA is None: AKA = ''
+
+        if AKA == "":
+            AKA = row_data.get("alias", "")
+        if AKA is None: AKA = ''
+
+        # city
+        city = row_data.get("city", "")
+        if not city:
+            city = row_data.get("city", "")
+        if city is None: city = ''
+        city = city.titel()    
 
         # DOB
         DOB = row_data.get("DOB", "")
@@ -2260,7 +2284,8 @@ def read_xlsx_new(input_xlsx):
         row_data["phone"] = phone
         row_data["fullname"] = fullname
         row_data["business"] = business
-        row_data["DOB"] = DOB        
+        row_data["city"] = city        
+        row_data["DOB"] = DOB  
         row_data["SEX"] = SEX         
         row_data["AKA"] = AKA
         row_data["firstname"] = firstname
@@ -2271,12 +2296,29 @@ def read_xlsx_new(input_xlsx):
         row_data["ip"] = ip
         row_data["dnsdomain"] = dnsdomain
 
-        data.append(row_data)
-     
+        # data.append(row_data)
+        try:
+            data.append(row_data)
+        except Exception as e:
+            print(f"{color_red}Error appending data: {str(e)}{color_reset}")
 
     # Close the workbook
     # wb.close()
-    # return data
+    return data
+
+def read_xlsx_basic(input_xlsx):
+    print(f'{color_green}Reading basic intel:{input_xlsx}{color_reset}')     
+
+    # data = []
+    wb = openpyxl.load_workbook(input_xlsx)
+    ws = wb.active
+
+    for row in ws.iter_rows(min_row=2, values_only=True):  # Assuming headers are in the first row
+        entry = dict(zip(headers_intel, row))
+        data.append(entry)
+
+    return data
+
 
 def redirect_detect():  # https://goo.gle
     print(f'{color_yellow}\n\t<<<<< redirected {color_blue}websites{color_yellow} >>>>>{color_reset}')
@@ -2324,7 +2366,7 @@ def redirect_detect():  # https://goo.gle
 def request_url(url):
     
     fake_referer = 'https://www.google.com/'
-    headers = {'Referer': fake_referer}
+    headers_url = {'Referer': fake_referer}
 
     
     (content, referer, osurl, titleurl, pagestatus)= ('blank', '', '', '', '')
@@ -2336,7 +2378,7 @@ def request_url(url):
         url = ("https://" +url)
 
     try:
-        response = requests.get(url, verify=False, headers=headers)        
+        response = requests.get(url, verify=False, headers=headers_url)        
         response.raise_for_status()
         pagestatus  = response.status_code
         content = response.content.decode()
@@ -2389,7 +2431,7 @@ def resolverRS():# testIP= 77.15.67.232
     for ip in ips:
         row_data = {}
         (query) = (ip)
-        (country, city, zip, case, note, state) = ('', '', '', '', '', '')
+        (country, city, zipcode, case, note, state) = ('', '', '', '', '', '')
         (misc, info) = ('', '')
         
         url = ('https://resolve.rs/ip/geolocation.html?ip=%s' %(ip))
@@ -2400,8 +2442,8 @@ def resolverRS():# testIP= 77.15.67.232
                 pagestatus = '403 Error'
                 content = ''
 
-            elif "\"code\": \"" in eachline :   # and zip != ''
-                zip = eachline.split("\"")[3]
+            elif "\"code\": \"" in eachline :   # and zipcode != ''
+                zipcode = eachline.split("\"")[3]
             elif "\"en\": \"" in eachline :   # city
                 # print(f'')
                 if city == '':
@@ -2439,7 +2481,7 @@ def request(url):
     (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
     (string) = ('')
     fake_referer = 'https://www.google.com/'
-    headers = {'Referer': fake_referer}
+    headers_url = {'Referer': fake_referer}
     url = url.replace("http://", "https://")     # test
     # if "http" not in url.lower():
         # url = ('https://%s' %(url))
@@ -2451,7 +2493,8 @@ def request(url):
     # else:
         # page  = requests.get("http://" +url)
 
-    page  = requests.get(url, headers=headers)
+    page  = requests.get(url, headers=headers_url)
+    # page  = requests.get(url, headers=headers)
     pagestatus  = page.status_code
     soup = BeautifulSoup(page.content, 'html.parser')
     content = soup.prettify()
@@ -2537,22 +2580,18 @@ def reversephonecheck():# testPhone= 708-372-8101   https://www.reversephonechec
     for phone in phones:
         row_data = {}
         (query) = (phone)
+        ranking = '9 - reversephonecheck'
         (fulladdress, country, city, case, note) = ('', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
         (areacode, prefix, line, count, match, match2) = ('', '', '', 1, '', '')
         (url) = ('')
-        phone = phone.replace('(','').replace(')','-').replace(' ','')
-        if phone.startswith('1-'):
-            phone = phone.replace('1-','')
-        elif phone.startswith('1'):
-            phone = phone.lstrip('1')
 
-        if len(phone) != 10:
-            # print(f'{color_red}Invalid phone number{color_reset} {phone}')
-            print('')
-        elif '-' not in phone:
+        if len(phone.lstrip('1')) == 10:
+            # print(f' {phone} has 10 digits')    # temp
+            phone = phone.lstrip('1')
             phone = (phone[:3] + "-" + phone[3:6] + "-" + phone[6:])
-  
+            # print(f'{color_yellow}phone {color_reset} {phone}') # temp
+            
         (line2) = ('')
         if "-" in phone:
             phone2 = phone.split("-")
@@ -2565,21 +2604,31 @@ def reversephonecheck():# testPhone= 708-372-8101   https://www.reversephonechec
                 
             except:
                 pass
-        url = ('https://www.reversephonecheck.com/1-%s/%s/%s/#%s' %(areacode, prefix, line, phone.replace('-', ''))) 
-        # print(f'{color_yellow}url =  {url}{color_reset}')   #temp
-        # print(f'{color_blue}{phone}{color_reset}') # temp
+
+        url = (f'https://www.reversephonecheck.com/1-{areacode}/{prefix}/{line}/#{phone[-2:]}' )
+
         (content, referer, osurl, titleurl, pagestatus) = request(url) 
         match = ("%s - %s" %(prefix, line2))
-
+        
+        phone = phone.replace('-', '')
         for eachline in content.split("\n"):
             if match in eachline:
                 pagestatus = 'research'
+                ranking = '4 - reversephonecheck'
                 count += 1
 
-        if pagestatus == 'research' and count == 2:
-            print(f'{color_green}{url}{color_reset}')
+        if '404' in pagestatus:
+            ranking = '99 - reversephonecheck'
+        elif pagestatus == 'research' and count == 2:
+            print(f'{color_green}{url}{color_reset} {phone}')
+            ranking = '5 - reversephonecheck'
+        else:
+            print(f'{color_red}{url}{color_reset} {phone}')
+            ranking = '9 - reversephonecheck'
 
-            ranking = '3 - reversephonecheck'
+        if '404' not in pagestatus:
+        # if 1==1:    
+
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["url"] = url
@@ -2589,7 +2638,7 @@ def reversephonecheck():# testPhone= 708-372-8101   https://www.reversephonechec
             row_data["city"] = city
             row_data["country"] = country
             row_data["fulladdress"] = fulladdress
-            row_data["titleurl"] = titleurl            
+            # row_data["titleurl"] = titleurl            
             # row_data["pagestatus"] = pagestatus            
                         
             data.append(row_data)
@@ -2697,7 +2746,7 @@ def snapchat(): # testuser = kevinrose
             row_data["firstname"] = firstname
             row_data["middlename"] = middlename
             row_data["lastname"] = lastname
-
+            row_data["user"] = user
             data.append(row_data)
 
 
@@ -2749,7 +2798,6 @@ def spydialer():# testPhone= 708-372-8101
     for phone in phones:
         row_data = {}
         (query, pagestatus) = (phone, 'research')
-        phone = phone.replace('(','').replace(')','').replace(' ','')
         url = ('https://www.spydialer.com')
         print(f'{color_yellow}{phone}{color_reset}')
 
@@ -2758,7 +2806,7 @@ def spydialer():# testPhone= 708-372-8101
         row_data["ranking"] = ranking
         row_data["url"] = url
         row_data["phone"] = phone
-        row_data["pagestatus"] = pagestatus            
+        # row_data["pagestatus"] = pagestatus            
                         
         data.append(row_data)
 
@@ -2770,7 +2818,7 @@ def thatsthememail():   # testEmail= smooth8101@yahoo.com
         # print(f'{color_red}{email}{color_reset}')
         row_data = {}
         (query, content, note) = (email, '', '')
-        (country, city, zip, case, note) = ('', '', '', '', '')
+        (country, city, zipcode, case, note) = ('', '', '', '', '')
         
         url = ('https://thatsthem.com/email/%s' %(email))
         # (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -2808,7 +2856,7 @@ def thatsthemip():# testIP= 8.8.8.8
        
     for ip in ips:
         row_data = {}
-        (country, city, zip, case, note, state) = ('', '', '', '', '', '')
+        (country, city, zipcode, case, note, state) = ('', '', '', '', '', '')
         
         url = ('https://thatsthem.com/ip/%s' %(ip))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -2850,13 +2898,13 @@ def thatsthemphone():# testPhone= 708-372-8101
         (query, ranking) = (phone, '9 - thatsthem')
         
         if '-' not in phone:
-            phone = phone_dashes(phone)
+            phone = phone_dashes(phone.lstrip('1'))
         
-        (country, city, zip, case, note) = ('', '', '', '', '')
+        (country, city, zipcode, case, note) = ('', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus) = ('', '', '', '', '')
-        phone = phone.replace('(','').replace(')','-')
+        
         time.sleep(2) # will sleep for 10 seconds
-        url = ('https://thatsthem.com/phone/%s' %(phone))    # https://thatsthem.com/reverse-phone-lookup
+        url = ('https://thatsthem.com/phone/%s' %(phone.lstrip('1')))    # https://thatsthem.com/reverse-phone-lookup
         # (content, referer, osurl, titleurl, pagestatus) = request(url)
 
         if "Found 0 results for your query" in content or "The request could not be satisfied" in content:
@@ -2867,7 +2915,9 @@ def thatsthemphone():# testPhone= 708-372-8101
             if "Found 0 results for your query" in eachline and case == '':
                 print(f'{color_red}Not found{color_reset}')  # temp
                 url = ('')
-               
+
+        phone = phone.replace('-', '')
+        
         if note == '':
             ranking = '6 - thatsthem'
         else:   
@@ -2994,10 +3044,11 @@ def tiktok(): # testuser = kevinrose
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["url"] = url
+            row_data["user"] = user
             row_data["lastname"] = lastname
             row_data["firstname"] = firstname
             row_data["fullname"] = fullname
-            row_data["titleurl"] = titleurl
+            # row_data["titleurl"] = titleurl
             # row_data["pagestatus"] = pagestatus
             
                                    
@@ -3132,6 +3183,7 @@ def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDon
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["url"] = url
+            row_data["user"] = user
             # row_data["lastname"] = lastname
             # row_data["firstname"] = firstname
             row_data["fullname"] = fullname
@@ -3174,8 +3226,9 @@ def twitter():    # testuser=    kevinrose     # add info
             ranking = '9 - twitter'
 
 
-        # row_data["query"] = query
+        row_data["query"] = query
         row_data["ranking"] = ranking
+        row_data["user"] = user
         row_data["url"] = url
         row_data["lastname"] = lastname
         row_data["firstname"] = firstname
@@ -3195,7 +3248,7 @@ def whatismyip():    # testuser= 77.15.67.232
     print(f"{color_yellow}\n\t<<<<< whatismyipaddress.com {color_blue}IP's{color_yellow} >>>>>{color_reset}")
     for ip in ips:
         row_data = {}
-        (query, city, state, zip, pagestatus, title) = (ip, '', '', '', '', '')
+        (query, city, state, zipcode, pagestatus, title) = (ip, '', '', '', '', '')
         url = ('https://whatismyipaddress.com/ip/%s' %(ip))
 
         ranking = '9 - whatismyipaddress'
@@ -3225,7 +3278,7 @@ def whitepagesphone():# testuser=    210-316-9435
     for phone in phones:    
         row_data = {}
         (query, ranking) = (phone, '9 - whitepages')
-        url = ('https://www.whitepages.com/phone/1-%s' %(phone))
+        url = ('https://www.whitepages.com/phone/1-%s' %(phone.lstrip('1')))
 
         # (content, referer, osurl, titleurl, pagestatus) = request(url)    # access denied cloudflare
        
@@ -3242,17 +3295,10 @@ def whocalld():# testPhone= 708-372-8101 DROP THE LEADING 1
     for phone in phones:
         row_data = {}
         (query, note) = (phone, '')
-
-        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+        (country, city, state, zipcode, case, note) = ('', '', '', '', '', '')
         (fullname, content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '', '')
-        phone = phone.replace('(','').replace(')','').replace(' ','')
-        
-        if phone.startswith('1-'):
-            phone = phone.replace('1-','')
-        elif phone.startswith('1'):
-            phone = phone.replace('1','')
  
-        url = ('https://whocalld.com/+1%s' %(phone.replace("-", "")))
+        url = ('https://whocalld.com/+1%s' %(phone.lstrip('1')))
         
         (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
 
@@ -3299,7 +3345,7 @@ def whocalld():# testPhone= 708-372-8101 DROP THE LEADING 1
             row_data["city"] = city
             row_data["country"] = country
             row_data["state"] = state
-            row_data["zip"] = zip            
+            row_data["zipcode"] = zipcode            
            
             data.append(row_data)
         time.sleep(2) 
@@ -3310,7 +3356,7 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
     for ip in ips:    
         row_data = {}
         (query, note) = (ip, '')
-        (city, business, country, zip, state) = ('', '', '', '', '')
+        (city, business, country, zipcode, state) = ('', '', '', '', '')
         (content, titleurl, pagestatus) = ('', '', '')
         (email, phone, fullname, entity, fulladdress) = ('', '', '', '', '') 
         url = ('https://www.ip-adress.com/whois/%s' %(ip))
@@ -3330,7 +3376,7 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
                         elif "ISP</abbr><td>" in eachline:
                             business = eachline.strip().split("ISP</abbr><td>")[1]
                         elif "Postal Code<td>" in eachline:
-                            zip = eachline.strip().split("Postal Code<td>")[1]
+                            zipcode = eachline.strip().split("Postal Code<td>")[1]
                         elif "State<td>" in eachline:
                             state = eachline.strip().split("State<td>")[1]
                
@@ -3341,8 +3387,8 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
                     city = eachline.strip().split("<tr><th>City</th><td>")[1]
                     city = city.split("<")[0]            
                 elif "<tr><th>Postal Code</th><td>" in eachline:
-                    zip = eachline.strip().split("<tr><th>Postal Code</th><td>")[1]
-                    zip = zip.split("<")[0] 
+                    zipcode = eachline.strip().split("<tr><th>Postal Code</th><td>")[1]
+                    zipcode = zipcode.split("<")[0] 
             time.sleep(3) #will sleep for 30 seconds
             if "Fail" in pagestatus:
                 pagestatus = 'fail'
@@ -3375,11 +3421,11 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
                 if line.lower().startswith('city:'):city = (line.split(': ')[1].lstrip())
                 if line.lower().startswith('address:'):fulladdress = ('%s %s' %(fulladdress, line.split(': ')[1].lstrip()))
                 if line.lower().startswith('stateprov:'):state = (line.split(': ')[1].lstrip())
-                if line.lower().startswith('postalcode:'):zip = (line.split(': ')[1].lstrip())
+                if line.lower().startswith('postalcode:'):zipcode = (line.split(': ')[1].lstrip())
                 if line.lower().startswith('orgname:'):entity = (line.split(': ')[1].lstrip())
                 elif line.lower().startswith('org-name:'):entity = (line.split(': ')[1].lstrip())
 
-        print(f'{color_green}{ip}{color_yellow}	{country}	{city}	{zip}{color_reset}')
+        print(f'{color_green}{ip}{color_yellow}	{country}	{city}	{zipcode}{color_reset}')
 
         if '.' in ip:
             ranking = '9 - whois'
@@ -3399,7 +3445,7 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
             row_data["city"] = city
             row_data["country"] = country
             row_data["state"] = state
-            row_data["zip"] = zip            
+            row_data["zipcode"] = zipcode            
            
             data.append(row_data)
 
@@ -3436,7 +3482,7 @@ def wordpress(): # testuser = kevinrose
             row_data["ranking"] = ranking
             row_data["url"] = url
             row_data["note"] = note
-            row_data["url"] = url
+            row_data["user"] = user
             row_data["note"] = note
             data.append(row_data)
 
@@ -3509,6 +3555,67 @@ def wordpresssearchemail():    # testuser=    kevinrose@gmail.com
                         row_data["email"] = email                        
                         print(f'{color_green}{url}{color_reset}')    
 
+def write_blurb():
+    '''
+        read Intel.xlsx and write ossint_.docx to describe what you found.
+    '''
+    docx_file = "ossint_.docx"
+    
+    print(f'Writing blurb from {input_xlsx}')
+
+    if not os.path.exists(input_xlsx):
+        input(f"{color_red}{input_xlsx} doesnt exist.{color_reset}")
+        sys.exit()
+    elif os.path.getsize(input_xlsx) == 0:
+        input(f'{color_red}{input_xlsx} is empty. Fill it with intel you found.{color_reset}')
+        sys.exit()
+    elif os.path.isfile(input_xlsx):
+        print(f'{color_green}Reading {input_xlsx}{color_reset} for blurb')        
+        # write_blurb(input_xlsx, docx_file)
+    else:
+        input(f'{color_red}See {input_xlsx} does not exist. Hit Enter to exit...{color_reset}')
+        sys.exit()
+
+
+    # Open the Excel file
+    wb = openpyxl.load_workbook(input_xlsx)
+    sheet = wb.active
+    
+    # Find the column headers
+    header_row = sheet[1]
+    column_names = [cell.value for cell in header_row]    
+    
+    # Columns to skip
+    columns_to_skip = ["ranking", "content", "referer", "osurl", "titleurl", "pagestatus"]
+
+    
+    for idx, cell in enumerate(header_row, start=1):
+        if cell.value == "fullname":
+            fullname_column_index = idx
+            # print(f'Fullname: {fullname_column_index}')
+            break
+
+    if fullname_column_index is None:
+        print("Fullname column not found in the Excel file.")
+        return
+
+    # Create a new Word document
+    doc = Document()
+ 
+    sentence = (f'An open-source search revealed the following details.\n\n')
+    print(f'{sentence}')  
+    doc.add_paragraph(sentence)    
+    # Loop through rows in the Excel file and write to Word document
+    for row in sheet.iter_rows(min_row=2, values_only=True):
+        sentence = "\n".join(f"{column}: {value}" for column, value in zip(column_names, row) if column not in columns_to_skip and value is not None)
+        doc.add_paragraph(sentence)
+        doc.add_paragraph("")  # Add an empty line between rows
+
+
+    # Save the Word document
+    doc.save(docx_file)
+    print(f"Data written to {docx_file}")
+    
 
 def write_intel(data):
     '''
@@ -3517,9 +3624,15 @@ def write_intel(data):
     It defines the column headers, sets column widths, and then iterates 
     through each row of data, writing it into the Excel worksheet.
     '''
+    # print(f'data2 = {data}') # temp
+    print(f'{color_green}Writing {output_xlsx}{color_reset}')
 
-    print(f'{color_green}Writing {outuput_xlsx}{color_reset}')
-
+    try:
+        data = sorted(data, key=lambda x: (x.get("ranking", ""), x.get("fullname", ""), x.get("query", "")))
+        print(f'sorted by ranking')
+    except TypeError as error:
+        print(f'{color_red}{error}{color_reset}')
+    
     global workbook
     workbook = Workbook()
     global worksheet
@@ -3530,16 +3643,17 @@ def write_intel(data):
     worksheet.freeze_panes = 'B2'  # Freeze cells
     worksheet.selection = 'B2'
 
-    headers = [
-        "query", "ranking", "fullname", "url", "email", "user", "phone"
-        , "business", "fulladdress", "city", "state", "country", "note", "AKA"
-        , "DOB", "SEX", "info", "misc", "firstname", "middlename", "lastname"
-        , "associates", "case", "sosfilenumber", "owner", "president", "sosagent"
-        , "managers", "Time", "Latitude", "Longitude", "Coordinate"
-        , "original_file", "Source", "Source file information", "Plate", "VIS", "VIN"
-        , "VYR", "VMA", "LIC", "LIY", "DLN", "DLS", "content", "referer", "osurl"
-        , "titleurl", "pagestatus", "ip", "dnsdomain"
-    ]
+# headers moved to top
+    # headers_intel = [
+        # "query", "ranking", "fullname", "url", "email", "user", "phone"
+        # , "business", "fulladdress", "city", "state", "country", "note", "AKA"
+        # , "DOB", "SEX", "info", "misc", "firstname", "middlename", "lastname"
+        # , "associates", "case", "sosfilenumber", "owner", "president", "sosagent"
+        # , "managers", "Time", "Latitude", "Longitude", "Coordinate"
+        # , "original_file", "Source", "Source file information", "Plate", "VIS", "VIN"
+        # , "VYR", "VMA", "LIC", "LIY", "DLN", "DLS", "content", "referer", "osurl"
+        # , "titleurl", "pagestatus", "ip", "dnsdomain"
+    # ]
 
     log_headers = [
         "Date", "Subject", "Requesting Agency", "Requesting Agent", "Case"
@@ -3548,7 +3662,7 @@ def write_intel(data):
 
 
     # Write headers to the first row
-    for col_index, header in enumerate(headers):
+    for col_index, header in enumerate(headers_intel):
         cell = worksheet.cell(row=1, column=col_index + 1)
         cell.value = header
         if col_index in [3, 4, 5, 6, 49, 50]: 
@@ -3615,14 +3729,19 @@ def write_intel(data):
     worksheet.column_dimensions['AU'].width = 10 # osurl
     worksheet.column_dimensions['AV'].width = 10 # titleurl
     worksheet.column_dimensions['AW'].width = 12 # pagestatus
-    worksheet.column_dimensions['AX'].width = 15 # ip
+    worksheet.column_dimensions['AX'].width = 16 # ip
     worksheet.column_dimensions['AY'].width = 15 # dnsdomain
+
+    for i in range(len(data)):
+        if data[i] is None:
+            data[i] = ''
+
 
     for row_index, row_data in enumerate(data):
 
-        for col_index, col_name in enumerate(headers):
-            cell_data = row_data.get(col_name)
+        for col_index, col_name in enumerate(headers_intel):
             try:
+                cell_data = row_data.get(col_name)
                 worksheet.cell(row=row_index+2, column=col_index+1).value = cell_data
             except Exception as e:
                 print(f"{color_red}Error printing line: {str(e)}{color_reset}")
@@ -3720,10 +3839,347 @@ def write_intel(data):
 
 
 
-    workbook.save(outuput_xlsx)
+    workbook.save(output_xlsx)
 
 # Save the workbook
 # wb.save('output.xlsx')
+
+def write_intel_basic(data, output_xlsx):
+    print(f'{color_green}Writing intel to {output_xlsx}{color_reset}')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    # ws.append(headers)  # Writing headers
+    ws.append(headers_intel)  # Writing headers
+
+
+    for row_data in data:
+        row = [row_data.get(header, '') for header in headers_intel]
+        ws.append(row)
+
+    wb.save(output_xlsx)
+
+
+def write_locations(data):
+    '''
+    The write_locations() function receives the processed data as a list of 
+    dictionaries and writes it to a new Excel file using openpyxl. 
+    It defines the column headers, sets column widths, and then iterates 
+    through each row of data, writing it into the Excel worksheet.
+    '''
+
+    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
+    print(f'data = {data} write locations function')  # temp
+    global workbook
+    workbook = Workbook()
+    global worksheet
+    worksheet = workbook.active
+
+    worksheet.title = 'Locations'
+    header_format = {'bold': True, 'border': True}
+    worksheet.freeze_panes = 'B2'  # Freeze cells
+    worksheet.selection = 'B2'
+
+    headers_locations = [
+        "#", "Time", "Latitude", "Longitude", "Address", "Group", "Subgroup"
+        , "Description", "Type", "Source", "Deleted", "Tag", "Source file information"
+        , "Service Identifier", "Carved", "Name", "business", "number", "street"
+        , "city", "county", "state", "zipcode", "country", "fulladdress", "query"
+        , "Sighting State", "Plate", "Capture Time", "Capture Network", "Highway Name"
+        , "Coordinate", "Capture Location Latitude", "Capture Location Longitude"
+        , "Container", "Sighting Location", "Direction", "Time Local", "End time"
+        , "Category", "Manually decoded", "Account", "PlusCode", "Time Original", "Timezone"
+        , "Icon", "origin_file", "case", "Index"
+
+    ]
+
+    # Write headers to the first row
+    for col_index, header in enumerate(headers_locations):
+        cell = worksheet.cell(row=1, column=col_index + 1)
+        cell.value = header
+        if col_index in [2, 3, 4]: 
+            fill = PatternFill(start_color="FFA500", end_color="FFA500", fill_type="solid") # orange?
+            cell.fill = fill
+        elif col_index in [1, 5, 6, 7, 8, 9, 15, 16, 24, 30, 31, 36, 38]:  # yellow headers
+            fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")  # Use yellow color
+            cell.fill = fill
+        elif col_index == 27:  # Red for column 27
+            fill = PatternFill(start_color="FF0000", end_color="FF0000", fill_type="solid")  # Red color
+            cell.fill = fill
+    try:
+        ## Excel column width
+        worksheet.column_dimensions['A'].width = 8# #
+        worksheet.column_dimensions['B'].width = 19# Time
+        worksheet.column_dimensions['C'].width = 18# Latitude
+        worksheet.column_dimensions['D'].width = 18# Longitude
+        worksheet.column_dimensions['E'].width = 45# Address
+        worksheet.column_dimensions['F'].width = 14# Group
+        worksheet.column_dimensions['G'].width = 13# Subgroup
+        worksheet.column_dimensions['H'].width = 17# Description
+        worksheet.column_dimensions['I'].width = 9# Type
+        worksheet.column_dimensions['J'].width = 10# Source
+        worksheet.column_dimensions['K'].width = 10# Deleted
+        worksheet.column_dimensions['L'].width = 11# Tag
+        worksheet.column_dimensions['M'].width = 20# Source file information
+        worksheet.column_dimensions['N'].width = 15# Service Identifier
+        worksheet.column_dimensions['O'].width = 7# Carved
+        worksheet.column_dimensions['P'].width = 15# Name
+        
+        ## bonus
+        worksheet.column_dimensions['Q'].width = 20# business 
+        worksheet.column_dimensions['R'].width = 10# number
+        worksheet.column_dimensions['S'].width = 20# street 
+        worksheet.column_dimensions['T'].width = 15# city   
+        worksheet.column_dimensions['Y'].width = 25# county    
+        worksheet.column_dimensions['V'].width = 12# state   
+        worksheet.column_dimensions['W'].width = 8# zipcode     
+        worksheet.column_dimensions['X'].width = 6# country    
+        worksheet.column_dimensions['Y'].width = 26# FullAddress   
+        worksheet.column_dimensions['Z'].width = 26# query
+
+        ##  Flock
+        worksheet.column_dimensions['AA'].width = 11# Sighting State
+        worksheet.column_dimensions['AB'].width = 11# Plate
+        worksheet.column_dimensions['AC'].width = 22# Capture Time
+        worksheet.column_dimensions['AD'].width = 15# Capture Network
+        worksheet.column_dimensions['AE'].width = 21# Highway Name
+        worksheet.column_dimensions['AF'].width = 30# Coordinate
+        worksheet.column_dimensions['AG'].width = 20# Capture Location Latitude
+        worksheet.column_dimensions['AH'].width = 20# Capture Location Longitude
+
+        ##
+        worksheet.column_dimensions['AI'].width = 10# Container
+        worksheet.column_dimensions['AJ'].width = 14# Sighting Location
+        worksheet.column_dimensions['AK'].width = 10# Direction
+        worksheet.column_dimensions['AL'].width = 11# Time Local
+        worksheet.column_dimensions['AM'].width = 25# End time
+        worksheet.column_dimensions['AN'].width = 10# Category
+        worksheet.column_dimensions['AO'].width = 18# Manually decoded
+        worksheet.column_dimensions['AP'].width = 10# Account
+        worksheet.column_dimensions['AQ'].width = 25 # PlusCode
+        worksheet.column_dimensions['AR'].width = 21 # Time Original
+        worksheet.column_dimensions['AS'].width = 9 # Timezone
+        worksheet.column_dimensions['AT'].width = 10 # Icon   
+        worksheet.column_dimensions['AU'].width = 20 # origin_file
+        worksheet.column_dimensions['AV'].width = 10 # case
+        worksheet.column_dimensions['AW'].width = 6 # Index
+    except:pass
+    
+    for row_index, row_data in enumerate(data):
+
+        for col_index, col_name in enumerate(headers_locations):
+            cell_data = row_data.get(col_name)
+            try:
+                worksheet.cell(row=row_index+2, column=col_index+1).value = cell_data
+            except Exception as e:
+                print(f"{color_red}Error printing line: {str(e)}{color_reset}")
+
+
+    # Create a new worksheet for color codes
+    color_worksheet = workbook.create_sheet(title='Icons')
+    color_worksheet.freeze_panes = 'B2'  # Freeze cells
+
+    # Excel column width
+    color_worksheet.column_dimensions['A'].width = 8# Icon sample
+    color_worksheet.column_dimensions['B'].width = 9# Name
+    color_worksheet.column_dimensions['C'].width = 29# Description
+
+    # Excel row height
+    color_worksheet.row_dimensions[2].height = 22  # Adjust the height as needed
+    color_worksheet.row_dimensions[3].height = 22
+    color_worksheet.row_dimensions[4].height = 23
+    color_worksheet.row_dimensions[5].height = 23
+    color_worksheet.row_dimensions[6].height = 40   # truck
+    color_worksheet.row_dimensions[7].height = 6
+    color_worksheet.row_dimensions[8].height = 24
+    color_worksheet.row_dimensions[9].height = 22
+    color_worksheet.row_dimensions[10].height = 22
+    color_worksheet.row_dimensions[11].height = 22
+    color_worksheet.row_dimensions[12].height = 23
+    color_worksheet.row_dimensions[13].height = 23
+    color_worksheet.row_dimensions[14].height = 25
+    color_worksheet.row_dimensions[15].height = 25
+    color_worksheet.row_dimensions[16].height = 23
+    color_worksheet.row_dimensions[17].height = 6
+    color_worksheet.row_dimensions[18].height = 38
+    color_worksheet.row_dimensions[19].height = 38
+    color_worksheet.row_dimensions[20].height = 38
+    color_worksheet.row_dimensions[21].height = 38
+    color_worksheet.row_dimensions[22].height = 38
+    color_worksheet.row_dimensions[23].height = 6
+    color_worksheet.row_dimensions[24].height = 15
+    color_worksheet.row_dimensions[25].height = 6
+    color_worksheet.row_dimensions[26].height = 15
+
+
+    
+    # Define color codes
+    color_worksheet['A1'] = ' '
+    color_worksheet['B1'] = 'Icon'
+    color_worksheet['C1'] = 'Icon Description'
+
+    icon_data = [
+
+        ('', 'Car', 'Lpr red car (License Plate Reader)'),
+        ('', 'Car2', 'Lpr yellow car'),
+        ('', 'Car3', 'Lpr greeen car with circle'),
+        ('', 'Car4', 'Lpr red car with circle'),
+        ('', 'Truck', 'Lpr truck'),         
+        ('', '', ''),
+        ('', 'Calendar', 'Calendar'), 
+        ('', 'Home', 'Home'),                
+        ('', 'Images', 'Photo'),
+        ('', 'Intel', 'I'),  
+        ('', 'Locations', 'Reticle'),  
+        ('', 'default', 'Yellow flag'),  
+        ('', 'Office', 'Office'),         
+        ('', 'Searched', 'Searched Item'),          
+        ('', 'Videos', 'Video clip'),        
+        ('', '', ''),
+        ('', 'Toll', 'Blue square'), 
+        ('', 'N', 'Northbound blue arrow'),
+        ('', 'E', 'Eastbound blue arrow'),
+        ('', 'S', 'Southbound blue arrow'),
+        ('', 'W', 'Westbound blue arrow'),
+        ('', '', ''),
+        ('', 'Yellow font', 'Tagged'),
+        ('', 'Chats', 'Chats'),   # 
+
+
+        ('', '', ''),
+        ('', 'NOTE', 'visit https://earth.google.com/ <file><Import KML> select gps.kml <open>'),
+    ]
+
+    for row_index, (icon, tag, description) in enumerate(icon_data):
+        color_worksheet.cell(row=row_index + 2, column=1).value = icon
+        color_worksheet.cell(row=row_index + 2, column=2).value = tag
+        color_worksheet.cell(row=row_index + 2, column=3).value = description
+
+    car_icon = 'https://maps.google.com/mapfiles/kml/pal4/icon15.png'   # red car
+    car2_icon = 'https://maps.google.com/mapfiles/kml/pal2/icon47.png'  # yellow car
+    car3_icon = 'https://maps.google.com/mapfiles/kml/pal4/icon54.png'  # green car with circle
+    car4_icon = 'https://maps.google.com/mapfiles/kml/pal4/icon7.png'  # red car with circle
+    truck_icon = 'https://maps.google.com/mapfiles/kml/shapes/truck.png'    # blue truck
+    default_icon = 'https://maps.google.com/mapfiles/kml/pal2/icon13.png'   # yellow flag
+    calendar_icon = 'https://maps.google.com/mapfiles/kml/pal2/icon23.png' # paper
+    chat_icon = 'https://maps.google.com/mapfiles/kml/shapes/post_office.png' # email
+    locations_icon = 'https://maps.google.com/mapfiles/kml/pal3/icon28.png'    # yellow paddle
+    home_icon = 'https://maps.google.com/mapfiles/kml/pal3/icon56.png'
+    images_icon = 'https://maps.google.com/mapfiles/kml/pal4/icon46.png'
+    intel_icon = 'https://maps.google.com/mapfiles/kml/pal3/icon44.png'
+    office_icon = 'https://maps.google.com/mapfiles/kml/pal3/icon21.png'
+    searched_icon = 'https://maps.google.com/mapfiles/kml/pal4/icon0.png'  #  
+    toll_icon = 'https://earth.google.com/images/kml-icons/track-directional/track-none.png'
+    videos_icon = 'https://maps.google.com/mapfiles/kml/pal2/icon30.png'
+    n_icon = 'https://earth.google.com/images/kml-icons/track-directional/track-0.png'
+    e_icon = 'https://earth.google.com/images/kml-icons/track-directional/track-4.png'
+    s_icon = 'https://earth.google.com/images/kml-icons/track-directional/track-8.png'
+    w_icon = 'https://earth.google.com/images/kml-icons/track-directional/track-12.png'
+
+    try:
+        # Insert graphic from URL into cell of color_worksheet
+
+        response = requests.get(car_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A2')
+
+        response = requests.get(car2_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A3')
+
+        response = requests.get(car3_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A4')
+
+        response = requests.get(car4_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A5')
+
+        response = requests.get(truck_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A6')
+
+        response = requests.get(calendar_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A8')
+        
+        response = requests.get(home_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A9')
+
+        response = requests.get(images_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A10')
+
+        response = requests.get(intel_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A11')
+
+        response = requests.get(locations_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A12')
+
+        response = requests.get(default_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A13')
+
+        response = requests.get(office_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A14')        
+
+        response = requests.get(searched_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A15')
+
+        response = requests.get(videos_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A16')
+        
+        response = requests.get(toll_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A18')
+
+        response = requests.get(n_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A19')
+
+        response = requests.get(e_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A20')
+
+        response = requests.get(s_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A21')
+
+        response = requests.get(w_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A22')
+
+        response = requests.get(chat_icon)
+        img = Image(io.BytesIO(response.content))
+        color_worksheet.add_image(img, 'A24')     
+        
+    except:
+        pass
+
+    
+    workbook.save(output_xlsx)
+
+
+def write_locations_basic(data, output_xlsx):
+    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    ws.append(headers_locations)  # Writing location headers
+
+    for row_data in data:
+        row = [row_data.get(header_l, '') for header_l in headers_locations]
+        ws.append(row)
+
+    wb.save(output_xlsx)
 
 def youtube(): # testuser = kevinrose
     print(f'{color_yellow}\n\t<<<<< youtube {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -3818,7 +4274,7 @@ def titles():    # testsite= google.com
         url = website
 
         fake_referer = 'https://www.google.com/'
-        headers = {'Referer': fake_referer}
+        headers_url = {'Referer': fake_referer}
         url = url.replace("http://", "https://")     # test
         if "http" not in url.lower():
             url = ('https://%s' %(url))
@@ -3862,35 +4318,33 @@ def validnumber():# testPhone= 7083703020
     # https://validnumber.com/phone-number/3124377966/
     for phone in phones:
         row_data = {}
-        (query, ranking) = (phone, '5 - validnumber')
-        (country, city, state, zip, case, note) = ('', '', '', '', '', '')
+        (query, ranking) = (phone, '9 - validnumber')
+        (country, city, state, zipcode, case, note) = ('', '', '', '', '', '')
         (content, referer, osurl, titleurl, pagestatus)  = ('', '', '', '', '')
         (query) = (phone)
-        phone = phone.replace('(','').replace(')','').replace(' ','')
-        if phone.startswith('1-'):
-            phone =phone.replace('1-','')
-        elif phone.startswith('1'):
-            phone =phone.lstrip('1')
  
-        url = ('https://validnumber.com/phone-number/%s/' %(phone.replace("-", "")))
+        url = ('https://validnumber.com/phone-number/%s/' %(phone.lstrip("1")))
         
         (content, referer, osurl, titleurl, pagestatus) = request(url)    # protected by cloudflare
         pagestatus = ''
         for eachline in content.split("\n"):
             if "No name associated with this number" in eachline and case == '':
                 print(f'{color_red}not found{color_reset}')  # temp
-                url = ('')
+                
+                # url = ('')
             elif "Find out who owns" in eachline:
                 if 'This device is registered in ' in eachline:
+                    ranking = '5 - validnumber'
                     note = eachline.split('\"')[1]
                     note = note.split('Free owner details for')[0]
                     city = eachline.split("This device is registered in ")[1].split("Free owner details")[0]
-                    
                     state = city.split(',')[1]
                     city = city.split(',')[0]
-
         if city != '':        
             city = city.title()
+
+        if url != '':        
+
             print(f'{color_green}{url}{color_reset}') 
 
             row_data["query"] = query
@@ -3967,7 +4421,7 @@ def whoiswebsite():    # testsite= google.com
         url = ('https://www.ip-adress.com/website/%s' %(dnsdomain))
         url2 = ('https://whois.domaintools.com/%s' %(dnsdomain.replace('www.','')))
         (email,phone,fullname,country,city,state) = ('','','','','','')
-        (city, country, zip, state, ip) = ('', '', '', '', '')
+        (city, country, zipcode, state, ip) = ('', '', '', '', '')
         (content, titleurl, pagestatus) = ('', '', '')
         (email, phone, fullname, entity, fulladdress) = ('', '', '', '', '') 
 
@@ -3987,7 +4441,7 @@ def whoiswebsite():    # testsite= google.com
             # row_data["note"] = note            
             row_data["state"] = state            
             # row_data["SEX"] = SEX            
-            # row_data["zip"] = zip            
+            # row_data["zipcode"] = zipcode            
             row_data["dnsdomain"] = dnsdomain            
             row_data["titleurl"] = titleurl            
             row_data["pagestatus"] = pagestatus            
@@ -4024,7 +4478,7 @@ def whoiswebsite():    # testsite= google.com
                 if line.lower().startswith('city:'):city = (line.split(': ')[1].lstrip())
                 if line.lower().startswith('address:'):fulladdress = ('%s %s' %(fulladdress, line.split(': ')[1].lstrip()))
                 if line.lower().startswith('stateprov:'):state = (line.split(': ')[1].lstrip())
-                if line.lower().startswith('postalcode:'):zip = (line.split(': ')[1].lstrip())
+                if line.lower().startswith('postalcode:'):zipcode = (line.split(': ')[1].lstrip())
                 if line.lower().startswith('orgname:'):entity = (line.split(': ')[1].lstrip())
                 elif line.lower().startswith('org-name:'):entity = (line.split(': ')[1].lstrip())
 
@@ -4043,7 +4497,7 @@ def whoiswebsite():    # testsite= google.com
             row_data["note"] = note            
             row_data["state"] = state            
             row_data["SEX"] = SEX            
-            row_data["zip"] = zip            
+            row_data["zipcode"] = zipcode            
             row_data["dnsdomain"] = dnsdomain            
             row_data["titleurl"] = titleurl            
             row_data["pagestatus"] = pagestatus            
@@ -4068,7 +4522,7 @@ def whoiswebsite():    # testsite= google.com
             row_data["note"] = note            
             row_data["state"] = state            
             row_data["SEX"] = SEX            
-            row_data["zip"] = zip            
+            row_data["zipcode"] = zipcode            
             row_data["dnsdomain"] = dnsdomain            
             row_data["titleurl"] = titleurl            
             row_data["pagestatus"] = pagestatus            
@@ -4079,28 +4533,27 @@ def whoiswebsite():    # testsite= google.com
         time.sleep(7)
 
 
-
-
 def usage():
     '''
         Prints out examples of syntax
     '''
     file = sys.argv[0].split('\\')[-1]
-    print(f'\nDescription2: {color_green}{description}{color_reset}')
+    print(f'\nDescription2: {color_green}{description2}{color_reset}')
     print(f'{file} Version: {version} by {author}')
     print(f'\n    {color_yellow}insert your input into input.txt')
     print(f'\nExample:')
-    print(f'    {file} -b')
+    print(f'    {file} -b -I Intel_test.xlsx')
+    print(f'    {file} -c -I Intel_test.xlsx    # alpha')
     print(f'    {file} -E')
     print(f'    {file} -i')
-    print(f'    {file} -l')
+    print(f'    {file} -l -O locations_.xlsx -I intel_test.xlsx # alpha')
     print(f'    {file} -t')
     print(f'    {file} -s')
     print(f'    {file} -p')
     print(f'    {file} -U')
     print(f'    {file} -W')
-    print(f'    {file} -E -i -p -U -W -I input.txt')
-
+    print(f'    {file} -E -i -p -U -I input.txt')
+    print(f'    {file} -E -i -p -U -I Intel_test.xlsx')
 
 if __name__ == '__main__':
     main()
@@ -4118,7 +4571,10 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<<Future Wishlist  >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+add timestamp to log sheet
 currently only reads input.txt. add input.xlsx input.
+python identityhunt.py  -E -i -p -U -I Intel_test.xlsx  # works
+fix -c convert
 
 populate log sheet with todays date
 
