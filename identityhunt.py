@@ -40,7 +40,7 @@ headers_intel = [
     "managers", "Time", "Latitude", "Longitude", "Coordinate",
     "original_file", "Source", "Source file information", "Plate", "VIS", "VIN",
     "VYR", "VMA", "LIC", "LIY", "DLN", "DLS", "content", "referer", "osurl",
-    "titleurl", "pagestatus", "ip", "dnsdomain"
+    "titleurl", "pagestatus", "ip", "dnsdomain", "Tag", "Icon", "Type"
 ]
 
 headers_locations = [
@@ -192,6 +192,8 @@ def main():
 
     parser.add_argument('-E','--emailmodules', help='email modules', required=False, action='store_true')
     parser.add_argument('-b','--blurb', help='write ossint blurb', required=False, action='store_true')
+    parser.add_argument('-B','--blank', help='create blank intel sheet', required=False, action='store_true')
+
     parser.add_argument('-H','--howto', help='help module', required=False, action='store_true')
     parser.add_argument('-i','--ips', help='ip modules', required=False, action='store_true')
     parser.add_argument('-l','--locations', help='convert intel 2 locations format', required=False, action='store_true')
@@ -212,6 +214,7 @@ def main():
         samples()
         return 0 
         sys.exit()
+
 
     if args.howto:  # this section might be redundant
         parser.print_help()
@@ -246,6 +249,15 @@ def main():
     else:
         output_xlsx = args.output
 
+
+    if args.blank:  
+        # write_intel_basic(data, output_xlsx)
+        write_intel(data)
+        return 0 
+        sys.exit()
+
+
+
 # if text file input
     if input_file_type == 'txt':
         if not os.path.exists(filename):
@@ -276,6 +288,7 @@ def main():
                 if file_exists == True:
                     print(f' converting {input_xlsx}')    # temp
                     # data = read_xlsx(input_xlsx)
+                    data = []
                     data = read_xlsx_basic(input_xlsx)
                     # write_intel(data)
                     write_intel_basic(data, output_xlsx)
@@ -290,6 +303,7 @@ def main():
                 sys.exit()
 
             if args.locations:
+                data = []
                 # data = read_xlsx(input_xlsx)    # never finishes
                 data = read_xlsx_basic(input_xlsx)    # works
                 write_locations(data)   # works
@@ -2148,7 +2162,6 @@ def read_xlsx(input_xlsx):
 
     # dnsdomains = []
 
-
         # url
         url = row_data.get("url", "")
         if url is None: 
@@ -2224,7 +2237,8 @@ def read_xlsx(input_xlsx):
         if not city:
             city = row_data.get("city", "")
         if city is None: city = ''
-        city = city.titel()    
+        city = city.title()    
+
 
         # DOB
         DOB = row_data.get("DOB", "")
@@ -2319,6 +2333,19 @@ def read_xlsx_basic(input_xlsx):
 
     return data
 
+def read_xlsx_basic_location(input_xlsx):
+    print(f'{color_green}Reading basic intel:{input_xlsx}{color_reset}')     
+
+    # data = []
+    wb = openpyxl.load_workbook(input_xlsx)
+    ws = wb.active
+
+    for row in ws.iter_rows(min_row=2, values_only=True):  # Assuming headers are in the first row
+        entry = dict(zip(headers_intel, row))
+        data.append(entry)
+
+    return data
+    
 
 def redirect_detect():  # https://goo.gle
     print(f'{color_yellow}\n\t<<<<< redirected {color_blue}websites{color_yellow} >>>>>{color_reset}')
@@ -3359,7 +3386,9 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
         (city, business, country, zipcode, state) = ('', '', '', '', '')
         (content, titleurl, pagestatus) = ('', '', '')
         (email, phone, fullname, entity, fulladdress) = ('', '', '', '', '') 
-        url = ('https://www.ip-adress.com/whois/%s' %(ip))
+        # url = ('https://www.ip-adress.com/whois/%s' %(ip))
+        url = ('https://www.ipaddress.com/ipv4/%s' %(ip))        
+        
         if sys.platform == 'win32' or sys.platform == 'win64':    
             (content, referer, osurl, titleurl, pagestatus) = request(url)
             if '403 Forbidden' in content:
@@ -3586,7 +3615,7 @@ def write_blurb():
     column_names = [cell.value for cell in header_row]    
     
     # Columns to skip
-    columns_to_skip = ["ranking", "content", "referer", "osurl", "titleurl", "pagestatus"]
+    columns_to_skip = ["ranking", "content", "referer", "osurl", "titleurl", "pagestatus", "city", "state", "firstname", "lastname", "Latitude", "Longitude", "original_file"]
 
     
     for idx, cell in enumerate(header_row, start=1):
@@ -3860,6 +3889,19 @@ def write_intel_basic(data, output_xlsx):
 
     wb.save(output_xlsx)
 
+def write_locations_basic(data, output_xlsx):
+    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+
+    ws.append(headers_locations)  # Writing location headers
+
+    for row_data in data:
+        row = [row_data.get(header_l, '') for header_l in headers_locations]
+        ws.append(row)
+
+    wb.save(output_xlsx)
 
 def write_locations(data):
     '''
@@ -4167,19 +4209,7 @@ def write_locations(data):
     workbook.save(output_xlsx)
 
 
-def write_locations_basic(data, output_xlsx):
-    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
 
-    wb = openpyxl.Workbook()
-    ws = wb.active
-
-    ws.append(headers_locations)  # Writing location headers
-
-    for row_data in data:
-        row = [row_data.get(header_l, '') for header_l in headers_locations]
-        ws.append(row)
-
-    wb.save(output_xlsx)
 
 def youtube(): # testuser = kevinrose
     print(f'{color_yellow}\n\t<<<<< youtube {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -4543,6 +4573,7 @@ def usage():
     print(f'\n    {color_yellow}insert your input into input.txt')
     print(f'\nExample:')
     print(f'    {file} -b -I Intel_test.xlsx')
+    print(f'    {file} -B -O Intel_.xlsx')    
     print(f'    {file} -c -I Intel_test.xlsx    # alpha')
     print(f'    {file} -E')
     print(f'    {file} -i')
