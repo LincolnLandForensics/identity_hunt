@@ -15,11 +15,11 @@ import json
 import time
 import random
 import openpyxl
-import requests
+import requests # pip install requests
 
-from docx import Document
+from docx import Document   # pip install python-docx
 
-from openpyxl import load_workbook, Workbook
+from openpyxl import load_workbook, Workbook    # pip install openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
 import socket
@@ -30,7 +30,7 @@ import argparse  # for menu system
 author = 'LincolnLandForensics'
 description2 = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '3.0.2'
+version = '3.0.3'
 
 headers_intel = [
     "query", "ranking", "fullname", "url", "email", "user", "phone",
@@ -52,7 +52,7 @@ headers_locations = [
     , "Coordinate", "Capture Location Latitude", "Capture Location Longitude"
     , "Container", "Sighting Location", "Direction", "Time Local", "End time"
     , "Category", "Manually decoded", "Account", "PlusCode", "Time Original", "Timezone"
-    , "Icon", "origin_file", "case", "Index"
+    , "Icon", "original_file", "case", "Index"
     ]
     
 
@@ -288,8 +288,8 @@ def main():
                 if file_exists == True:
                     print(f' converting {input_xlsx}')    # temp
                     # data = read_xlsx(input_xlsx)
-                    data = []
-                    data = read_xlsx_basic(input_xlsx)
+                    # data = []
+                    # data = read_xlsx_basic(input_xlsx)
                     # write_intel(data)
                     write_intel_basic(data, output_xlsx)
                     
@@ -340,6 +340,7 @@ def main():
         
     if args.ips and len(ips) > 0:  
         print(f'IPs = {ips}')
+        arinip()    # alpha
         main_ip()
         ## geoiptool() # works but need need to rate limit; expired certificate breaks this
         resolverRS()    #? 
@@ -361,9 +362,8 @@ def main():
         
     if args.test:  
         print(f' using test module')
-        twitter()
-        blogspot_users()    # test
-        
+
+        arinip()
         
     if args.usersmodules and len(users) > 0:  
         print(f'users = {users}')    
@@ -492,6 +492,84 @@ def about(): # testuser = kevinrose
             row_data["firstname"] = firstname
 
             data.append(row_data)
+
+def arinip():    # testuser=    77.15.67.232
+    from subprocess import call, Popen, PIPE
+    print(f"{color_yellow}\n\t<<<<< arin {color_blue}IP's{color_yellow} >>>>>{color_reset}")
+    for ip in ips:    
+        row_data = {}
+        (query, note) = (ip, '')
+        (city, business, country, zipcode, state) = ('', '', '', '', '')
+        (Latitude, Longitude) = ('', '')
+
+        (content, titleurl, pagestatus) = ('', '', '')
+        (email, phone, fullname, entity, fulladdress) = ('', '', '', '', '') 
+        url = (f'https://search.arin.net/rdap/?query={ip}')        
+        
+        if sys.platform == 'win32' or sys.platform == 'win64':    
+            # (content, referer, osurl, titleurl, pagestatus) = request(url)
+            
+            
+            if '403 Forbidden' in content:
+                pagestatus = '403 Forbidden'
+                content = ''
+            for eachline in content.split("\n"):
+                
+                if "www.ip-adress.com/legal-notice" in eachline:
+                    for eachline in content.split("<tr><th>"):
+                        if "Country<td>" in eachline:
+                            country = eachline.strip().split("Country<td>")[1]
+                        elif "City<td>" in eachline:
+                            city = eachline.strip().split("City<td>")[1]
+                        elif "ISP</abbr><td>" in eachline:
+                            business = eachline.strip().split("ISP</abbr><td>")[1]
+                        elif "Postal Code<td>" in eachline:
+                            zipcode = eachline.strip().split("Postal Code<td>")[1]
+                        elif "State<td>" in eachline:
+                            state = eachline.strip().split("State<td>")[1]
+               
+                elif "<tr><th>Country</th><td>" in eachline:
+                    country = eachline.strip().split("<tr><th>Country</th><td>")[1]
+                    country = country.split("<")[0]
+                elif "City: " in eachline:
+                    city = eachline.strip().split("<tr><th>City</th><td>")[1]
+                    city = city.split("<")[0]            
+                elif "<tr><th>Postal Code</th><td>" in eachline:
+                    zipcode = eachline.strip().split("<tr><th>Postal Code</th><td>")[1]
+                    zipcode = zipcode.split("<")[0] 
+            # time.sleep(3) #will sleep for 30 seconds
+            if "Fail" in pagestatus:
+                pagestatus = 'fail'
+
+        print(f'{color_green}{ip}{color_yellow}	{country}	{city}	{zipcode}{color_reset}')
+
+        if '.' in ip:
+            ranking = '9 - whois'
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["ip"] = ip
+            row_data["note"] = note
+            row_data["fullname"] = fullname
+            row_data["url"] = url
+            row_data["email"] = email
+            row_data["phone"] = phone
+            row_data["note"] = entity
+            row_data["fulladdress"] = fulladdress
+            row_data["query"] = query
+            
+            row_data["city"] = city
+            row_data["country"] = country
+            row_data["state"] = state
+            row_data["zipcode"] = zipcode            
+            row_data["Latitude"] = Latitude
+            row_data["Longitude"] = Longitude
+            # row_data["content"] = content # temp
+            # row_data["pagestatus"] = pagestatus # temp
+           
+           
+            data.append(row_data)
+
 
 def bitbucket(): # testuser = rick
     print(f'{color_yellow}\n\t<<<<< bitbucket {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -720,7 +798,7 @@ def facebook(): # testuser = kevinrose
         (fullname,lastname,firstname) = ('','','')
         (content, referer, osurl, titleurl, pagestatus) = ('','','','','')
         user = user.rstrip()
-        url = ('http://facebook.com/%s' %(user))
+        url = ('https://facebook.com/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = request(url)
         fullname = titleurl.strip()
         if ' ' in fullname:
@@ -1383,7 +1461,7 @@ def kik(): # testuser = kevinrose
         user = user.rstrip()
         url = ('https://ws2.kik.com/user/%s' %(user))
         
-        misc = ('http://kik.me/%s' %(user))
+        misc = ('https://kik.me/%s' %(user))
                
         
         (content, referer, osurl, titleurl, pagestatus) = request(url)
@@ -2239,10 +2317,10 @@ def read_xlsx(input_xlsx):
         if city is None: city = ''
         city = city.title()    
 
-
         # DOB
         DOB = row_data.get("DOB", "")
-        if not DOB:
+        if DOB is None: DOB = ''   
+        if DOB == '':
             DOB = row_data.get("dob", "")
         if DOB is None: DOB = ''    
 
@@ -2320,8 +2398,8 @@ def read_xlsx(input_xlsx):
     # wb.close()
     return data
 
-def read_xlsx_basic(input_xlsx):
-    print(f'{color_green}Reading basic intel:{input_xlsx}{color_reset}')     
+def read_xlsx_basic_old(input_xlsx):
+    print(f'{color_green}Reading basic intel: {input_xlsx}{color_reset}')     
 
     # data = []
     wb = openpyxl.load_workbook(input_xlsx)
@@ -2329,9 +2407,31 @@ def read_xlsx_basic(input_xlsx):
 
     for row in ws.iter_rows(min_row=2, values_only=True):  # Assuming headers are in the first row
         entry = dict(zip(headers_intel, row))
-        data.append(entry)
+        reordered_entry = {key: entry[key] for key in headers_intel}  # Reorder the entry based on headers_intel
+        data.append(reordered_entry)
 
     return data
+
+
+def read_xlsx_basic(input_xlsx):
+    print(f'{color_green}Reading basic intel: {input_xlsx}{color_reset}')     
+
+    # data = []
+    wb = openpyxl.load_workbook(input_xlsx)
+    ws = wb.active
+
+    headers = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))  # Read headers from the first row
+
+    for row in ws.iter_rows(min_row=2, values_only=True):  # Start iterating from the second row
+        entry = dict(zip(headers, row))  # Use the headers read from the file
+        filtered_entry = {key: entry[key] for key in headers_intel if key in headers}  # Filter out only the relevant headers
+        data.append(filtered_entry)
+
+    return data
+
+
+
+
 
 def read_xlsx_basic_location(input_xlsx):
     print(f'{color_green}Reading basic intel:{input_xlsx}{color_reset}')     
@@ -3384,6 +3484,8 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
         row_data = {}
         (query, note) = (ip, '')
         (city, business, country, zipcode, state) = ('', '', '', '', '')
+        (Latitude, Longitude) = ('', '')
+
         (content, titleurl, pagestatus) = ('', '', '')
         (email, phone, fullname, entity, fulladdress) = ('', '', '', '', '') 
         # url = ('https://www.ip-adress.com/whois/%s' %(ip))
@@ -3475,6 +3577,11 @@ def whoisip():    # testuser=    77.15.67.232   only gets 403 Forbidden
             row_data["country"] = country
             row_data["state"] = state
             row_data["zipcode"] = zipcode            
+            row_data["Latitude"] = Latitude
+            row_data["Longitude"] = Longitude
+            row_data["content"] = content # temp
+            row_data["pagestatus"] = pagestatus # temp
+           
            
             data.append(row_data)
 
@@ -3932,7 +4039,7 @@ def write_locations(data):
         , "Coordinate", "Capture Location Latitude", "Capture Location Longitude"
         , "Container", "Sighting Location", "Direction", "Time Local", "End time"
         , "Category", "Manually decoded", "Account", "PlusCode", "Time Original", "Timezone"
-        , "Icon", "origin_file", "case", "Index"
+        , "Icon", "original_file", "case", "Index"
 
     ]
 
@@ -4003,7 +4110,7 @@ def write_locations(data):
         worksheet.column_dimensions['AR'].width = 21 # Time Original
         worksheet.column_dimensions['AS'].width = 9 # Timezone
         worksheet.column_dimensions['AT'].width = 10 # Icon   
-        worksheet.column_dimensions['AU'].width = 20 # origin_file
+        worksheet.column_dimensions['AU'].width = 20 # original_file
         worksheet.column_dimensions['AV'].width = 10 # case
         worksheet.column_dimensions['AW'].width = 6 # Index
     except:pass
@@ -4602,6 +4709,13 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<<Future Wishlist  >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+https://www.textnow.com/
+https://www.talkatone.com/
+https://www.pinger.com/
+https://www.tumblr.com/login
+https://www.skype.com/en/
+https://cash.app/login
+https://www.reddit.com/login/
 add timestamp to log sheet
 currently only reads input.txt. add input.xlsx input.
 python identityhunt.py  -E -i -p -U -I Intel_test.xlsx  # works
