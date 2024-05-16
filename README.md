@@ -1,4 +1,4 @@
-# identity_hunt (identiy_hunt.py or identity_hunt.exe)
+# identityhunt (identiyhunt.py or identityhunt.exe)
 OSINT: track people down by username, email, ip, phone and website.
 
 ## installation:
@@ -28,61 +28,61 @@ Usage:
 
 default behavior, if you enter no options it just runs with -E -i -p -U -W selected
 ```
-double click identity_hunt.exe
+double click identityhunt.exe
 or
-python identity_hunt.py (from command prompt) 
+python identityhunt.py (from command prompt) 
 ```
 blurb
 ```
-python identity_hunt.py -b
+python identityhunt.py -b
 ```
 help
 ```
-identity_hunt.exe -H
+identityhunt.exe -H
 or
-python identity_hunt.py -H
+python identityhunt.py -H
 ```
 emails
 ```
-identity_hunt.exe -E
+identityhunt.exe -E
 or
-python identity_hunt.py -E
+python identityhunt.py -E
 ```
 ip's only
 ```
-identity_hunt.exe -i
+identityhunt.exe -i
 or
-python identity_hunt.py -i
+python identityhunt.py -i
 ```
 print sample info for your input.txt (ex. kevinrose)
 ```
-identity_hunt.exe -s
+identityhunt.exe -s
 or
-python identity_hunt.py -s
+python identityhunt.py -s
 ```
 phone numbers only
 ```
-identity_hunt.exe -p
+identityhunt.exe -p
 or
-python identity_hunt.py -p
+python identityhunt.py -p
 ```
 users only
 ```
-identity_hunt.exe -U
+identityhunt.exe -U
 or
-python identity_hunt.py -U
+python identityhunt.py -U
 ```
 websites only
 ```
-identity_hunt.exe -W
+identityhunt.exe -W
 or
-python identity_hunt.py -W
+python identityhunt.py -W
 ```
 you can add mixed input types at once.
 ```
-identity_hunt.exe -E -i -p -U -W
+identityhunt.exe -E -i -p -U -W
 or
-python identity_hunt.py -E -i -p -U -W
+python identityhunt.py -E -i -p -U -W
 ```
 
 
