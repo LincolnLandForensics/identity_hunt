@@ -22,6 +22,9 @@ from docx import Document   # pip install python-docx
 from openpyxl import load_workbook, Workbook    # pip install openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
+from tkinter import * 
+from tkinter import messagebox
+
 import socket
 import argparse  # for menu system
 
@@ -30,7 +33,7 @@ import argparse  # for menu system
 author = 'LincolnLandForensics'
 description2 = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '3.0.3'
+version = '3.0.4'
 
 headers_intel = [
     "query", "ranking", "fullname", "url", "email", "user", "phone",
@@ -63,6 +66,10 @@ headers_locations = [
                         # '|sleep|run|dat$|scr|jar|jxr|apt|w32|css|js|xpi|class|apk|rar|zip|hlp|cpp|crl' \
                         # '|cfg|cer|plg|lxdns|cgi|xn$)(?:xn--[a-zA-Z0-9]{2,22}|[a-zA-Z]{2,13}))(?:\s|$)')
 
+# regex_email = re.compile(
+    # r'(([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)(\s*;\s*|\s*$))*') # test
+# terrible. matches emails and phone numbers
+
 regex_host = re.compile(
     r'(?i)\b((?:(?!-)[a-zA-Z0-9-]{1,63}(?<!-)\.)+'
     '(?!exe|php|dll|doc|docx|txt|rtf|odt|xls|xlsx|ppt|pptx|bin|pcap|ioc|pdf|mdb|asp|html|xml|jpg|gif$|png'
@@ -70,6 +77,10 @@ regex_host = re.compile(
     '|sleep|run|dat$|scr|jar|jxr|apt|w32|css|js|xpi|class|apk|rar|zip|hlp|cpp|crl'
     '|cfg|cer|plg|lxdns|cgi|xn$)'
     '(?:xn--[a-zA-Z0-9]{2,22}|[a-zA-Z]{2,13}))(?:\s|$)')
+
+# regex_url = re.compile(
+    # r'(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()!@:%_\+.~#?&\/\/=]*)') # test
+# failed
 
 
 regex_md5 = re.compile(r'^([a-fA-F\d]{32})$')  # regex_md5        [a-f0-9]{32}$/gm
@@ -80,27 +91,38 @@ regex_sha512 = re.compile(r'^([a-fA-F\d]{128})$')  # regex_sha512
 regex_number = re.compile(r'^(^\d)$')  # regex_number    #Beta
 regex_number_fb = re.compile(r'^\d{9,15}$')  # regex_number    #to match facebook user id
 
-regex_ipv4 = re.compile('(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' +
-                        '(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
-regex_ipv6 = re.compile('(S*([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}S*|S*(' +
-                        '[0-9a-fA-F]{1,4}:){1,7}:S*|S*([0-9a-fA-F]{1,4}:)' +
-                        '{1,6}:[0-9a-fA-F]{1,4}S*|S*([0-9a-fA-F]{1,4}:)' +
-                        '{1,5}(:[0-9a-fA-F]{1,4}){1,2}S*|S*([0-9a-fA-F]' +
-                        '{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}S*|S*(' +
-                        '[0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}S*' +
-                        '|S*([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4})' +
-                        '{1,5}S*|S*[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4})' +
-                        '{1,6})S*|S*:((:[0-9a-fA-F]{1,4}){1,7}|:)S*|::(ffff' +
-                        '(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}' +
-                        '[0-9]){0,1}[0-9]).){3,3}(25[0-5]|(2[0-4]|1{0,1}[' +
-                        '0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[' +
-                        '0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]).){3,3}(25[' +
-                        '0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))')
+# regex_ipv4 = re.compile('(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' +
+                        # '(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)') # works
+
+regex_ipv4 = re.compile('([1-2]?[0-9]?[0-9]\.[1-2]?[0-9]?[0-9]\.[1-2]?[0-9]?[0-9]\.[1-2]?[0-9]?[0-9])') # test
 
 
-regex_phone = re.compile(
-    r'^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(\s*([2-9][0-8][0-9])\s*\)|([2-9][0-8][0-9]))\s*(?:[.-]\s*)?)?'
-    r'([2-9][0-9]{2})\s*(?:[.-]\s*)?([0-9]{4})$|^(\d{10})$|^1\d{10}$')
+# regex_ipv6 = re.compile('(S*([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}S*|S*(' +
+                        # '[0-9a-fA-F]{1,4}:){1,7}:S*|S*([0-9a-fA-F]{1,4}:)' +
+                        # '{1,6}:[0-9a-fA-F]{1,4}S*|S*([0-9a-fA-F]{1,4}:)' +
+                        # '{1,5}(:[0-9a-fA-F]{1,4}){1,2}S*|S*([0-9a-fA-F]' +
+                        # '{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}S*|S*(' +
+                        # '[0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}S*' +
+                        # '|S*([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4})' +
+                        # '{1,5}S*|S*[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4})' +
+                        # '{1,6})S*|S*:((:[0-9a-fA-F]{1,4}){1,7}|:)S*|::(ffff' +
+                        # '(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}' +
+                        # '[0-9]){0,1}[0-9]).){3,3}(25[0-5]|(2[0-4]|1{0,1}[' +
+                        # '0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[' +
+                        # '0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]).){3,3}(25[' +
+                        # '0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))')    # works
+
+regex_ipv6 = re.compile('(([0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9]))')    # test
+
+
+
+
+# regex_phone = re.compile(
+    # r'^(?:(?:\+?1\s*(?:[.-]\s*)?)?(?:\(\s*([2-9][0-8][0-9])\s*\)|([2-9][0-8][0-9]))\s*(?:[.-]\s*)?)?'
+    # r'([2-9][0-9]{2})\s*(?:[.-]\s*)?([0-9]{4})$|^(\d{10})$|^1\d{10}$')  # works
+
+regex_phone = re.compile(r'^(\+\d{1,2}\s)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}$')  # test
+
 regex_phone11 = re.compile(r'^1\d{10}$')
 regex_phone2 = re.compile(r'(\d{3}) \W* (\d{3}) \W* (\d{4}) \W* (\d*)$')
 
@@ -286,6 +308,7 @@ def main():
             if args.convert:
                 file_exists = os.path.exists(input_xlsx)
                 if file_exists == True:
+                    
                     print(f' converting {input_xlsx}')    # temp
                     # data = read_xlsx(input_xlsx)
                     # data = []
@@ -682,6 +705,98 @@ def cls():
     linux = 'clear'
     windows = 'cls'
     os.system([linux, windows][os.name == 'nt'])
+
+def convert_timestamp(timestamp, time_orig, timezone):
+    if timezone is None:
+        timezone = ''
+    if time_orig is None:
+        time_orig = ''
+
+    timestamp = str(timestamp)
+
+    if re.match(r'\d{1,2}/\d{1,2}/\d{4} \d{1,2}:\d{2}:\d{2}\.\d{3} (AM|PM)', timestamp):
+        # Define the expected format
+        expected_format = "%m/%d/%Y %I:%M:%S.%f %p"
+
+        # Parse the string into a datetime object
+        dt_obj = datetime.strptime(timestamp, expected_format)
+
+        # Remove microseconds
+        dt_obj = dt_obj.replace(microsecond=0)
+
+        # Format the datetime object back into a string with the specified format
+        timestamp = dt_obj.strftime("%Y/%m/%d %I:%M:%S %p")
+
+
+    # Regular expression to find all timezones
+    timezone_pattern = r"([A-Za-z ]+)$"
+    matches = re.findall(timezone_pattern, timestamp)
+
+    # Extract the last timezone match
+    if matches:
+        timezone = matches[-1]
+        timestamp = timestamp.replace(timezone, "").strip()
+    else:
+        timezone = ''
+        
+    if time_orig == "":
+        time_orig = timestamp
+    else:
+        timezone = ''
+
+    # timestamp = timestamp.replace(' at ', ' ')
+    if "(" in timestamp:
+        timestamp = timestamp.split('(')
+        timezone = timestamp[1].replace(")", '')
+        timestamp = timestamp[0]
+    elif " CDT" in timestamp:
+        timezone = "CDT"
+        timestamp = timestamp.replace(" CDT", "")
+    elif " CST" in timestamp:
+        timezone = "CST"
+        timestamp = timestamp.replace(" CST", "")
+
+    formats = [
+        "%B %d, %Y, %I:%M:%S %p %Z",    # June 13, 2022, 9:41:33 PM CDT (Flock)
+        "%Y:%m:%d %H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+        "%m/%d/%Y %I:%M:%S %p",
+        "%m/%d/%Y %I:%M:%S.%f %p", # '3/8/2024 11:06:47.358 AM  # task
+        "%m/%d/%Y %I:%M %p",  # timestamps without seconds
+        "%m/%d/%Y %H:%M:%S",  # timestamps in military time without seconds
+        "%m-%d-%y at %I:%M:%S %p %Z", # test 09-10-23 at 4:29:12 PM CDT
+        "%m-%d-%y %I:%M:%S %p",
+        "%B %d, %Y at %I:%M:%S %p %Z",
+        "%B %d, %Y at %I:%M:%S %p",
+        "%B %d, %Y %I:%M:%S %p %Z",
+        "%B %d, %Y %I:%M:%S %p",
+        "%B %d, %Y, %I:%M:%S %p %Z",
+        "%Y-%m-%dT%H:%M:%SZ",  # ISO 8601 format with UTC timezone
+        "%Y/%m/%d %H:%M:%S",  # 2022/06/13 21:41:33
+        "%d-%m-%Y %I:%M:%S %p",  # 13-06-2022 9:41:33 PM
+        "%d/%m/%Y %H:%M:%S",  # 13/06/2022 21:41:33
+        "%Y-%m-%d %I:%M:%S %p",  # 2022-06-13 9:41:33 PM
+        "%Y%m%d%H%M%S",  # 20220613214133
+        "%Y%m%d %H%M%S",  # 20220613 214133
+        "%m/%d/%y %H:%M:%S",  # 06/13/22 21:41:33
+        "%d-%b-%Y %I:%M:%S %p",  # 13-Jun-2022 9:41:33 PM
+        "%d/%b/%Y %H:%M:%S",  # 13/Jun/2022 21:41:33
+        "%Y/%b/%d %I:%M:%S %p",  # 2022/Jun/13 9:41:33 PM
+        "%d %b %Y %H:%M:%S",  # 13 Jun 2022 21:41:33
+        "%A, %B %d, %Y %I:%M:%S %p %Z",  # Monday, June 13, 2022 9:41:33 PM CDT ?
+        "%A, %B %d, %Y %I:%M:%S %p"     # Monday, June 13, 2022 9:41:33 PM CDT
+    ]
+
+    for fmt in formats:
+        try:
+            dt_obj = datetime.strptime(timestamp.strip(), fmt)
+            timestamp = dt_obj
+            return timestamp, time_orig, timezone
+                        
+        except ValueError:
+            pass
+
+    raise ValueError(f"{time_orig} Timestamp format not recognized")
 
 def disqus(): # testuser = kevinrose
     print(f'{color_yellow}\n\t<<<<< discus {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -1724,7 +1839,7 @@ def main_website():
 
 def massageanywhere():    # testuser=   Misty0427
     print(f'{color_yellow}\n\t<<<<< massageanywhere {color_blue}users{color_yellow} >>>>>{color_reset}')
-    print('eloh world') # temp
+
     for user in users:    
         row_data = {}
         (query, ranking) = (user, '7 - massageanywhere')
@@ -1783,6 +1898,27 @@ def massageanywhere():    # testuser=   Misty0427
                         
             data.append(row_data)
 
+def message_square(message, color):
+    horizontal_line = f"+{'-' * (len(message) + 2)}+"
+    empty_line = f"| {' ' * (len(message))} |"
+
+    print(color + horizontal_line)
+    print(empty_line)
+    print(f"| {message} |")
+    print(empty_line)
+    print(horizontal_line)
+    print(f'{color_reset}')
+
+def noInternetMsg():
+    '''
+    prints a pop-up that says "Connect to the Internet first"
+    '''
+    window = Tk()
+    window.geometry("1x1")
+      
+    w = Label(window, text ='Translate-Inator', font = "100") 
+    w.pack()
+    messagebox.showwarning("Warning", "Connect to the Internet first") 
 
 def osintIndustries_email(): 
     if len(emails) > 0:
@@ -2072,8 +2208,10 @@ def read_text(filename):
         parses the data into lists
         exports it to the outputfile
     """
-    print(f'{color_green}Reading  {filename}{color_reset}')  
-    print(f'data = {data}') # temp
+
+    message = (f'Reading {filename}')
+    message_square(message, color_green)
+
     if not os.path.exists(filename):
         input(f"{color_red}{filename} doesnt exist.{color_reset}")
         sys.exit()
@@ -2154,14 +2292,19 @@ def read_text(filename):
         dnsdomain = (eachline[50].strip())
 
         # Regex data type
-        if bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", query)):  # regex email    
+        # if re.search(regex_email, query):    # terrible. matches emails and phone numbers
+        if bool(re.search(r"^[\w\.\+\-]+\@[\w]+\.[a-z]{2,3}$", query)):  # regex email    # works
             email = query
             user = email.split('@')[0]
             temp1 = [email]
             if query.lower() not in emails:            # don't add duplicates
                 emails.append(email)
+        # elif re.search(regex_url, query):   # test
+            # url = query
+
         elif re.search(regex_host, query):  # regex_host (Finds url and dnsdomain) # False positives for emails    # todo
             url = query
+
             if url.lower().startswith('http'):
                 if url.lower() not in websites:            # don't add duplicates
                     websites.append(url)            
@@ -2224,11 +2367,12 @@ def read_xlsx(input_xlsx):
     for each row with headers as keys and cell values as values.
     
     """
-    print(f'{color_green}Reading {input_xlsx}{color_reset} ( read_xlsx)')  
+    message = (f'Reading {input_xlsx}')
+    message_square(message, color_green)
+ 
     wb = openpyxl.load_workbook(input_xlsx, read_only=True, data_only=True, keep_links=False)
     ws = wb.active
     data = [] 
-    # print(f'data1 = {data}') # temp
 
     # get header values from first row
     headers = [cell.value for cell in ws[1]]
@@ -2399,9 +2543,9 @@ def read_xlsx(input_xlsx):
     return data
 
 def read_xlsx_basic_old(input_xlsx):
-    print(f'{color_green}Reading basic intel: {input_xlsx}{color_reset}')     
+    message = (f'Reading basic intel: {input_xlsx}')
+    message_square(message, color_green)
 
-    # data = []
     wb = openpyxl.load_workbook(input_xlsx)
     ws = wb.active
 
@@ -2414,7 +2558,8 @@ def read_xlsx_basic_old(input_xlsx):
 
 
 def read_xlsx_basic(input_xlsx):
-    print(f'{color_green}Reading basic intel: {input_xlsx}{color_reset}')     
+    message = (f'Reading basic intel: {input_xlsx}')
+    message_square(message, color_green)
 
     # data = []
     wb = openpyxl.load_workbook(input_xlsx)
@@ -2434,7 +2579,8 @@ def read_xlsx_basic(input_xlsx):
 
 
 def read_xlsx_basic_location(input_xlsx):
-    print(f'{color_green}Reading basic intel:{input_xlsx}{color_reset}')     
+    message = (f'Reading basic intel: {input_xlsx}')
+    message_square(message, color_green)
 
     # data = []
     wb = openpyxl.load_workbook(input_xlsx)
@@ -2803,6 +2949,9 @@ Their1sn0freakingwaythisisreal12JT4321
 92.20.236.78
 255.255.255.255
 
+2607:f0d0:1002:51::4
+2607:f0d0:1002:0051:0000:0000:0000:0004
+
 annemconnor@yahoo.com
 kandyem@yahoo.com
 kevinrose@gmail.com
@@ -2819,6 +2968,7 @@ Their1sn0freakingwaythisisreal12344321@fakedomain.com
 385-347-1531
 312-999-9999
 7083703020
+17088675309
 {color_reset}
 '''
 )    
@@ -3696,8 +3846,9 @@ def write_blurb():
         read Intel.xlsx and write ossint_.docx to describe what you found.
     '''
     docx_file = "ossint_.docx"
-    
-    print(f'Writing blurb from {input_xlsx}')
+
+    message = (f'Writing blurb from {input_xlsx}')
+    message_square(message, color_green)
 
     if not os.path.exists(input_xlsx):
         input(f"{color_red}{input_xlsx} doesnt exist.{color_reset}")
@@ -3706,7 +3857,9 @@ def write_blurb():
         input(f'{color_red}{input_xlsx} is empty. Fill it with intel you found.{color_reset}')
         sys.exit()
     elif os.path.isfile(input_xlsx):
-        print(f'{color_green}Reading {input_xlsx}{color_reset} for blurb')        
+        message = (f'Reading {input_xlsx} for blurb')
+        message_square(message, color_green)
+       
         # write_blurb(input_xlsx, docx_file)
     else:
         input(f'{color_red}See {input_xlsx} does not exist. Hit Enter to exit...{color_reset}')
@@ -3760,8 +3913,8 @@ def write_intel(data):
     It defines the column headers, sets column widths, and then iterates 
     through each row of data, writing it into the Excel worksheet.
     '''
-    # print(f'data2 = {data}') # temp
-    print(f'{color_green}Writing {output_xlsx}{color_reset}')
+    message = (f'Writing {output_xlsx}')
+    message_square(message, color_green)
 
     try:
         data = sorted(data, key=lambda x: (x.get("ranking", ""), x.get("fullname", ""), x.get("query", "")))
@@ -3981,7 +4134,8 @@ def write_intel(data):
 # wb.save('output.xlsx')
 
 def write_intel_basic(data, output_xlsx):
-    print(f'{color_green}Writing intel to {output_xlsx}{color_reset}')
+    message = (f'Writing intel to {output_xlsx}')
+    message_square(message, color_green)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -3997,7 +4151,8 @@ def write_intel_basic(data, output_xlsx):
     wb.save(output_xlsx)
 
 def write_locations_basic(data, output_xlsx):
-    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
+    message = (f'Writing locations to {output_xlsx}')
+    message_square(message, color_green)
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -4017,9 +4172,9 @@ def write_locations(data):
     It defines the column headers, sets column widths, and then iterates 
     through each row of data, writing it into the Excel worksheet.
     '''
+    message = (f'Writing locations to {output_xlsx}')
+    message_square(message, color_green)
 
-    print(f'{color_green}Writing locations to {output_xlsx}{color_reset}')
-    print(f'data = {data} write locations function')  # temp
     global workbook
     workbook = Workbook()
     global worksheet
