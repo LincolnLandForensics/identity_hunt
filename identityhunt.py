@@ -33,7 +33,7 @@ import argparse  # for menu system
 author = 'LincolnLandForensics'
 description2 = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '3.0.4'
+version = '3.0.6'
 
 headers_intel = [
     "query", "ranking", "fullname", "url", "email", "user", "phone",
@@ -386,7 +386,7 @@ def main():
     if args.test:  
         print(f' using test module')
 
-        arinip()
+        cashapp()
         
     if args.usersmodules and len(users) > 0:  
         print(f'users = {users}')    
@@ -394,6 +394,7 @@ def main():
         about()    #
         bitbucket()    #
         blogspot_users()    # test
+        cashapp()
         disqus()    # test
         # ebay()  # all false positives due to captcha
         etsy()  # task
@@ -696,6 +697,52 @@ def carrot_email():
             data.append(row_data)
             # print(f'row_data = {row_data}') # temp
 
+def cashapp(): # testuser = kevinrose
+    print(f'{color_yellow}\n\t<<<<< cash.app {color_blue}users{color_yellow} >>>>>{color_reset}')
+    for user in users:    
+        row_data = {}
+        (query, ranking) = (user, '3 - cashapp')
+        (fullname, firstname, lastname, middlename, country) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://cash.app/$%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        if '404' not in pagestatus:
+            pattern = r'"display_name":"([^"]+)"'
+            match = re.search(pattern, content)
+            if match:
+                fullname = match.group(1)
+
+            if fullname.count(' ') == 1:
+                firstname, lastname = fullname.split(' ')
+                firstname = firstname.title()
+                lastname = lastname.upper()
+                fullname = (f'{firstname} {lastname}')
+                
+            elif fullname.count(' ') == 2:
+                firstname, middlename, lastname = fullname.split(' ')
+                firstname = firstname.title()
+                lastname = lastname.upper()
+                middlename = middlename.title()
+
+            pattern2 = r'"country_code":"([^"]+)"'
+            match2 = re.search(pattern2, content)
+            if match:
+                country = match2.group(1)        
+            
+            print(f'{color_green}{url}\t{fullname}\t{country}{color_yellow}{color_reset}') 
+
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["user"] = user
+            row_data["url"] = url
+            row_data["lastname"] = lastname
+            row_data["firstname"] = firstname
+            row_data["fullname"] = fullname
+            row_data["country"] = country
+                      
+            data.append(row_data)
+            
 
 def cls():
     """
@@ -1925,7 +1972,8 @@ def osintIndustries_email():
         row_data = {}
         ranking = '9 - manual'
         url = ('https://osint.industries/email#')
-
+        # app.osint.industries
+        
         row_data["ranking"] = ranking
         row_data["url"] = url
         data.append(row_data)
@@ -4870,6 +4918,10 @@ https://www.pinger.com/
 https://www.tumblr.com/login
 https://www.skype.com/en/
 https://cash.app/login
+https://cash.app/$<username>
+https://cash.app/$KevinRose
+
+
 https://www.reddit.com/login/
 add timestamp to log sheet
 currently only reads input.txt. add input.xlsx input.
