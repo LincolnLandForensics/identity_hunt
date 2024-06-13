@@ -724,7 +724,9 @@ def cashapp(): # testuser = kevinrose
                 firstname = firstname.title()
                 lastname = lastname.upper()
                 middlename = middlename.title()
-
+            (fullname, firstname, lastname, middlename) = fullname_parse(fullname)
+            
+            
             pattern2 = r'"country_code":"([^"]+)"'
             match2 = re.search(pattern2, content)
             if match:
@@ -1204,13 +1206,15 @@ def garmin(): # testuser = kevinrose
             fullname = titleurl
             fullname = fullname.split(" (")[0]
             fullname = fullname.replace("Garmin Connect","").strip()
+
+            (fullname, firstname, lastname, middlename) = fullname_parse(fullname)
             print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
 
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["fullname"] = fullname
-            # row_data["firstname"] = firstname
-            # row_data["lastname"] = lastname
+            row_data["firstname"] = firstname
+            row_data["lastname"] = lastname
             row_data["url"] = url
             row_data["user"] = user            
             # row_data["titleurl"] = titleurl            
