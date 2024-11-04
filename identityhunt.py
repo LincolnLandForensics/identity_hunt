@@ -33,7 +33,7 @@ import argparse  # for menu system
 author = 'LincolnLandForensics'
 description2 = "OSINT: track people down by username, email, ip, phone and website"
 tech = 'LincolnLandForensics'  # change this to your name if you are using Linux
-version = '3.0.6'
+version = '3.0.9'
 
 headers_intel = [
     "query", "ranking", "fullname", "url", "email", "user", "phone",
@@ -181,7 +181,7 @@ def main():
     global filename
     filename = 'input.txt'
     global input_xlsx
-    input_xlsx = 'Intel_.xlsx'
+    input_xlsx = 'Intel.xlsx'
     # global inputDetails
     # inputDetails = 'no'
 
@@ -267,7 +267,7 @@ def main():
         
 # output xlsx
     if not args.output:     # openpyxl conversion
-        output_xlsx = "Intel_.xlsx"        
+        output_xlsx = "Intel__DRAFT_V1.xlsx"          
     else:
         output_xlsx = args.output
 
@@ -352,12 +352,15 @@ def main():
         print(f'Emails = {emails}') # temp
         main_email()    # 
         carrot_email()
+        cyberbackground_email() # beta
+        # digitalfootprintcheckemail()
         ghunt()  # this is overwriting data
         google_calendar()     #
         have_i_been_pwned()    #
         holehe_email()    #
         osintIndustries_email()    #
         thatsthememail()    #
+        truepeople_email()
         ## twitteremail()    # auth required    
         wordpresssearchemail()  # requires auth
         
@@ -385,8 +388,8 @@ def main():
         
     if args.test:  
         print(f' using test module')
-
-        cashapp()
+        # digitalfootprintcheckemail()
+        reddit()
         
     if args.usersmodules and len(users) > 0:  
         print(f'users = {users}')    
@@ -410,6 +413,7 @@ def main():
         imageshack()    #
         instagram()    #
         instructables()     #
+        inteltechniques()   #test
         keybase()   # add location and twitter, and photo
         kik()    #
         # massageanywhere()   # broken ssl query
@@ -419,8 +423,10 @@ def main():
         myspace_users()    #
         paypal()  # needs work
         patreon()    #
+        pinterest()
         poshmark()    #    
         public()    #
+        reddit()
         sherlock()    #
         snapchat()    # must manually verify
         spotify()    #
@@ -430,6 +436,8 @@ def main():
         tinder() # add DOB, schools
         truthSocial()   # false positives
         twitter()   # needs auth
+        venvmo()
+        whatnot()
         whatsmyname()    #
         wordpress()    #
         wordpress_profiles()    #  
@@ -442,6 +450,7 @@ def main():
         
     if args.websites and len(websites) > 0:  
         print(f'websites = {websites}')    
+        centralops()
         main_website()
         redirect_detect()
         robtex()
@@ -744,7 +753,17 @@ def cashapp(): # testuser = kevinrose
             row_data["country"] = country
                       
             data.append(row_data)
-            
+     
+
+def centralops(): 
+    if len(websites) > 0:
+        row_data = {}
+        ranking = '9 - manual'
+        url = ('https://centralops.net/co/')
+
+        row_data["ranking"] = ranking
+        row_data["url"] = url
+        data.append(row_data)    
 
 def cls():
     """
@@ -846,6 +865,52 @@ def convert_timestamp(timestamp, time_orig, timezone):
             pass
 
     raise ValueError(f"{time_orig} Timestamp format not recognized")
+
+def cyberbackground_email():# testEmail= kevinrose@gmail.com    
+    print(f'{color_yellow}\n\t<<<<< cyberbackground {color_blue}emails{color_yellow} >>>>>{color_reset}')
+    
+    for email in emails:
+        row_data = {}
+        (query, content, note) = (email, '', '')
+        url = (f'https://www.cyberbackgroundchecks.com/email/{email}')
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)        
+
+        if 1==1:
+            if ('results for') in content: 
+                note = 'results for'
+                ranking = '8 - cyberbackground'
+
+                print(f'{color_green} {email}   {url}{color_reset}')
+          
+            else:
+            
+                ranking = '9 - cyberbackground'
+
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["email"] = email
+            row_data["note"] = note
+            row_data["content"] = content
+                        
+            data.append(row_data)
+
+def digitalfootprintcheckemail():    # testuser=    kevinrose@gmail.com 
+    print(f'{color_yellow}\n\t<<<<< digitalfootprintcheck {color_blue}emails{color_yellow} >>>>>{color_reset}')    
+    
+    for email in emails:
+        row_data = {}
+        (query, content, note) = (email, '', '')
+        
+        url = ('https://www.digitalfootprintcheck.com/free-checker.html?q=%s' %(email))
+
+        ranking = '9 - digitalfootprintcheck'
+                        
+        row_data["query"] = query
+        row_data["ranking"] = ranking
+        row_data["url"] = url
+        row_data["email"] = email                        
+        data.append(row_data)
 
 def disqus(): # testuser = kevinrose
     print(f'{color_yellow}\n\t<<<<< discus {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -1015,6 +1080,33 @@ def familytreephone():# testPhone= 708-372-8101 DROP THE LEADING 1
             row_data["url"] = url
             row_data["phone"] = phone
             data.append(row_data)
+
+def findwhocallsyou():# testPhone= 708-372-8101  
+    # note: need to add dishes if there are none
+    print(f'{color_yellow}\n\t<<<<< findwhocallsyou {color_blue}phone numbers{color_yellow} >>>>>{color_reset}')
+    for phone in phones:
+        phone = phone.replace('-', '')
+ 
+        row_data = {}
+        (query, ranking) = (phone, '9 - findwhocallsyou')
+        # phone = phone_dashes(phone.lstrip('1'))
+        
+        (country, city, zipcode, case, note) = ('', '', '', '', '')
+        # (content, referer, osurl, titleurl, pagestatus) = ('', '', '', '', '')
+        
+        # time.sleep(2) # will sleep for 10 seconds
+        url = ('https://findwhocallsyou.com/%s' %(phone))    
+
+        if 1==1:
+        # if url != '':
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["phone"] = phone
+            row_data["note"] = note
+
+            data.append(row_data)
+
 
 def flickr(): # testuser = kevinrose
     print(f'{color_yellow}\n\t<<<<< flickr {color_blue}users{color_yellow} >>>>>{color_reset}')
@@ -1400,6 +1492,9 @@ def instagram():    # testuser=    kevinrose     # add info
         try:
             (content, referer, osurl, titleurl, pagestatus) = request(url)
 
+            # Regular expression to find the profile_id
+            pattern = r'"profile_id":"(\d+)"'
+
             content = content.strip()
             titleurl = titleurl.strip()
             for eachline in content.split("\n"):
@@ -1414,7 +1509,16 @@ def instagram():    # testuser=    kevinrose     # add info
 
                     # Extract the description value and print it
                     note = datatemp['description']
-       
+                elif 'profile_id' in eachline:
+
+                    # Search for the pattern in the content
+                    match = re.search(pattern, content)
+
+                    # Extract and print the profile_id if found
+                    if match:
+                        misc = match.group(1)   # user id
+                    else:
+                        misc = ''
         except:
             pass
 
@@ -1428,7 +1532,7 @@ def instagram():    # testuser=    kevinrose     # add info
             if "@" in fullname:
                 (fullname, firstname, lastname, middlename) = ('', '', '', '')
         if '@' in titleurl:
-            print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}')   
+            print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset} {misc}')   
             row_data["query"] = query
             row_data["ranking"] = ranking
             row_data["user"] = user
@@ -1440,6 +1544,8 @@ def instagram():    # testuser=    kevinrose     # add info
             row_data["firstname"] = firstname
             # row_data["middlename"] = middlename
             row_data["lastname"] = lastname
+            row_data["note"] = note
+            row_data["misc"] = misc
 
             data.append(row_data)
 
@@ -1508,7 +1614,15 @@ def instructables(): # testuser = kevinrose
             row_data["url"] = url
             data.append(row_data)
             
-            
+def inteltechniques(): 
+    if len(users) > 0:
+        row_data = {}
+        ranking = '9 - manual'
+        url = ('https://inteltechniques.com/tools/')
+
+        row_data["ranking"] = ranking
+        # row_data["user"] = user
+        data.append(row_data)                
 
 def internet(host="8.8.8.8", port=53, timeout=3):
     """
@@ -1521,6 +1635,7 @@ def internet(host="8.8.8.8", port=53, timeout=3):
         socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
         return True
     except socket.error as ex:
+        print(f'this is an error')  # temp
         print(ex)
         return False
 
@@ -1975,7 +2090,7 @@ def osintIndustries_email():
     if len(emails) > 0:
         row_data = {}
         ranking = '9 - manual'
-        url = ('https://osint.industries/email#')
+        url = ('https://app.osint.industries/')
         # app.osint.industries
         
         row_data["ranking"] = ranking
@@ -2644,6 +2759,36 @@ def read_xlsx_basic_location(input_xlsx):
 
     return data
     
+def reddit(): # testuser = kevinrose
+    print(f'{color_yellow}\n\t<<<<< reddit {color_blue}users{color_yellow} >>>>>{color_reset}')
+
+    for user in users:    
+        row_data = {}
+        (query, ranking) = (user, '6 - reddit')
+        (city, country, fullname, titleurl, pagestatus, content) = ('', '', '', '', '', '')
+        (note) = ('')
+        user = user.rstrip()
+        url = ('https://www.reddit.com/user/%s/' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+
+        for eachline in content.split("  <"):
+            if "nobody on Reddit goes by that name" in eachline or "This account has been suspended" in eachline or "This user has deleted their account" in eachline:
+                ranking = '9 - reddit'
+            elif "hasn't posted yet" in eachline :
+                ranking = '8 - reddit'
+                note = "hasn't posted yet"
+
+        if '9' not in ranking:
+            print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
+
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["user"] = user            
+            row_data["note"] = note
+
+            data.append(row_data)           
+
 
 def redirect_detect():  # https://goo.gle
     print(f'{color_yellow}\n\t<<<<< redirected {color_blue}websites{color_yellow} >>>>>{color_reset}')
@@ -3469,6 +3614,43 @@ def titleurl_og(content):
         pass
     return titleurl
 
+def truepeople_email(): 
+    '''
+    this is protected by javascript, cookies and cloud flair
+    it would require using selenium and a hard coded webdriver
+    '''
+    
+    print(f'{color_yellow}\n\t<<<<< truepeoplesearch {color_blue}emails{color_yellow} >>>>>{color_reset}')
+    
+    for email in emails:
+        row_data = {}
+        (query, content, note) = (email, '', '')
+        url = f'https://www.truepeoplesearch.com/resultemail?email={email}'
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if '@' in email.lower():
+
+            if 'Enable JavaScript and cookies to continue' in content:
+                print(f'blah')
+            # if 'We could not find any records for that search criteria' in content:
+                ranking = '99 - truepeoplesearch'    # needs work
+            elif 'All retrieved results' in content:
+                note = 'Events shown in time zone'
+                ranking = '4 - truepeoplesearch'
+                # print(f'{color_green} {email}{color_reset}')                
+            else:
+                ranking = '9 - truepeoplesearch'
+                # print(f'{color_yellow} {email}  {color_reset}')
+
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["email"] = email
+            row_data["note"] = note
+            # row_data["content"] = content
+            data.append(row_data)
+            # print(f'row_data = {row_data}') # temp
+
+
 def truthSocial(): # testuser = realdonaldtrump https://truthsocial.com/@realDonaldTrump
     print(f'{color_yellow}\n\t<<<<< truthsocial {color_blue}users{color_yellow} >>>>>{color_reset}')
     print(f'{color_yellow}\n\t\t\tThis one one takes a while{color_reset}')
@@ -3527,10 +3709,10 @@ def twitter():    # testuser=    kevinrose     # add info
     print(f'{color_yellow}\n\t<<<<< twitter {color_blue}users{color_yellow} >>>>>{color_reset}')
     for user in users:    
         row_data = {}
-        (query, ranking) = (user, '9 - twitter')
+        (query, ranking) = (user, '9 - X')
 
         (fullname, firstname, lastname, middlename) = ('', '', '', '')
-        url = ('https://twitter.com/%s' %(user))
+        url = ('https://x.com/%s' %(user))
         (content, referer, osurl, titleurl, pagestatus) = ('','','', '', '')
         # (content, referer, osurl, titleurl, pagestatus) = request(url)
         # print(titleurl, url, pagestatus)  # temp
@@ -3547,12 +3729,12 @@ def twitter():    # testuser=    kevinrose     # add info
 
             print(f'{color_green}{url}{color_yellow}	   {fullname}	{titleurl}{color_reset}')
 
-            ranking = '5 - twitter'
+            ranking = '5 - X'
         except:
             # print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
 
             print(f'{color_yellow}{url}{color_yellow}	   {fullname}	{titleurl}{color_reset}')
-            ranking = '9 - twitter'
+            ranking = '9 - X'
 
 
         row_data["query"] = query
@@ -3587,7 +3769,29 @@ def whatismyip():    # testuser= 77.15.67.232
         row_data["ip"] = ip
         data.append(row_data)
 
-def whatsmyname():    # testuser=    kevinrose
+def whatnot(): # testuser = kevinrose
+    print(f'{color_yellow}\n\t<<<<< whatnot {color_blue}users{color_yellow} >>>>>{color_reset}')
+    for user in users:    
+        row_data = {}
+        (query, ranking) = (user, '7 - whatnot')
+        (fullname, firstname, lastname, middlename) = ('', '', '', '')
+        (city, country, fullname, titleurl, pagestatus) = ('', '', '', '', '')
+        user = user.rstrip()
+        url = ('https://www.whatnot.com/user/%s' %(user))
+        (content, referer, osurl, titleurl, pagestatus) = request(url)
+        if '404' not in pagestatus:
+            titleurl = titleurl.replace("Just a moment...","").strip()
+
+            print(f'{color_green}{url}{color_yellow}	{fullname}{color_reset}') 
+
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["url"] = url
+            row_data["titleurl"] = titleurl
+            data.append(row_data)
+
+
+def whatsmyname():    # testuser=   kevinrose
     print(f'\n\t{color_yellow}<<<<< Manually check whatsmyname users >>>>>{color_reset}')
     for user in users:    
         row_data = {}
@@ -3895,9 +4099,10 @@ def wordpresssearchemail():    # testuser=    kevinrose@gmail.com
 
 def write_blurb():
     '''
-        read Intel.xlsx and write ossint_.docx to describe what you found.
+        read Intel.xlsx and write OSINT_.docx to describe what you found.
     '''
-    docx_file = "ossint_.docx"
+    fullname_column_index = ''
+    docx_file = "OSINT_.docx"
 
     message = (f'Writing blurb from {input_xlsx}')
     message_square(message, color_green)
@@ -3927,7 +4132,7 @@ def write_blurb():
     column_names = [cell.value for cell in header_row]    
     
     # Columns to skip
-    columns_to_skip = ["ranking", "content", "referer", "osurl", "titleurl", "pagestatus", "city", "state", "firstname", "lastname", "Latitude", "Longitude", "original_file"]
+    columns_to_skip = ["query", "ranking", "content", "referer", "osurl", "titleurl", "pagestatus", "city", "state", "firstname", "lastname", "Latitude", "Longitude", "Coordinate", "original_file", "Icon"]
 
     
     for idx, cell in enumerate(header_row, start=1):
@@ -3955,7 +4160,11 @@ def write_blurb():
 
     # Save the Word document
     doc.save(docx_file)
-    print(f"Data written to {docx_file}")
+
+    message = (f'Data written to {docx_file}')
+    message_square(message, color_green)
+
+
     
 
 def write_intel(data):
@@ -4126,7 +4335,7 @@ def write_intel(data):
     color_worksheet.cell(row=2, column=2).value = 'Bad Intel or dead link'
     color_worksheet.cell(row=3, column=2).value = 'Research'
     color_worksheet.cell(row=4, column=2).value = 'Good Intel'
-    color_worksheet.cell(row=5, column=2).value = 'Highlited'
+    color_worksheet.cell(row=5, column=2).value = 'Highlighted'
 
     color_worksheet.cell(row=8, column=2).value = 'Also Known As (Alias)'
     color_worksheet.cell(row=9, column=2).value = 'Date of Birth'
@@ -4134,7 +4343,7 @@ def write_intel(data):
     color_worksheet.cell(row=11, column=2).value = 'Vehicle Identification Number'
     color_worksheet.cell(row=12, column=2).value = 'Vehicle Year'
     color_worksheet.cell(row=13, column=2).value = 'Vehicle Make'
-    color_worksheet.cell(row=14, column=2).value = 'Licence'
+    color_worksheet.cell(row=14, column=2).value = 'License'
     color_worksheet.cell(row=15, column=2).value = 'License Year'
     color_worksheet.cell(row=16, column=2).value = 'Drivers License Number'
     color_worksheet.cell(row=17, column=2).value = 'Drivers License State'
@@ -4702,6 +4911,26 @@ def validnumber():# testPhone= 7083703020
             data.append(row_data) 
 
 
+def venvmo(): # testuser = kevinrose
+    print(f'{color_yellow}\n\t<<<<< venmo {color_blue}users{color_yellow} >>>>>{color_reset}')
+    for user in users:    
+        row_data = {}
+        (query, ranking) = (user, '9 - venmo')
+
+        (fullname) = ('')
+        user = user.rstrip()
+        url = ('https://account.venmo.com/u/%s' %(user))
+        # (content, referer, osurl, titleurl, pagestatus) = request(url)
+        # titleurl = titleurl.replace(' - venmo','')
+        # if '404' not in pagestatus:
+        if 1 ==1:
+            row_data["query"] = query
+            row_data["ranking"] = ranking
+            row_data["user"] = user
+            row_data["url"] = url
+            data.append(row_data)
+            
+
 def viewdnsdomain():
     print(f'{color_yellow}\n\t<<<<<viewdns lookup >>>>>{color_reset}')    
 
@@ -4916,6 +5145,28 @@ if __name__ == '__main__':
 # <<<<<<<<<<<<<<<<<<<<<<<<<<Future Wishlist  >>>>>>>>>>>>>>>>>>>>>>>>>>
 
 """
+roblox
+https://findmyfbid.me/
+
+
+https://www.twitch.tv/kevinrose
+https://start.me/p/0Pqbdg/osint-500-tools   # reviewed
+
+https://start.me/p/1kJKR9/commandergirl-s-suggestions
+
+
+https://www.cyberbackgroundchecks.com/email/kevinrose@gmail.com
+
+# phone : whatsapp, haveibeenpwned, group me, true call, weibo, chime, qq, crickwick,
+discord, foursquare, telegram, paypal, facebook, walkie talkie, apple, cash app, marco polo, skype, okru, 
+
+
+https://instantusername.com/?q=kevinrose
+https://epieos.com/?q=kevinrose%40gmail.com&t=email
+
+
+https://findwhocallsyou.com/7472653842
+
 https://www.textnow.com/
 https://www.talkatone.com/
 https://www.pinger.com/
@@ -4926,7 +5177,8 @@ https://cash.app/$<username>
 https://cash.app/$KevinRose
 
 
-https://www.reddit.com/login/
+
+
 add timestamp to log sheet
 currently only reads input.txt. add input.xlsx input.
 python identityhunt.py  -E -i -p -U -I Intel_test.xlsx  # works
